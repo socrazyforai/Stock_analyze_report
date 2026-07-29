@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-tw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 股市籌碼分析器 - 信用交易觀測站</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-section">
+        <div class="logo-glow"></div>
+        <h1>AI 股市籌碼分析器</h1>
+        <span class="badge badge-primary">V2.0 PRO</span>
+      </div>
+      <div class="status-section">
+        <span class="status-indicator online"></span>
+        <span class="status-text">資料更新：<span id="update-date">加載中...</span></span>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="dashboard-grid">
+      
+      <!-- Top Overview Stats -->
+      <section class="overview-section">
+        <!-- Card 1: TWSE Margin Money -->
+        <div class="glass-card stat-card" id="twse-money-card">
+          <div class="card-glow"></div>
+          <div class="stat-header">
+            <h3>上市融資餘額 (金額)</h3>
+            <span class="icon">💵</span>
+          </div>
+          <div class="stat-value" id="twse-money-val">0 億</div>
+          <div class="stat-change" id="twse-money-change">
+            <span class="arrow">--</span> <span class="change-num">0 億 (0%)</span>
+          </div>
+          <div class="mini-metrics">
+            <div class="metric">
+              <span class="label">買進</span>
+              <span class="val" id="twse-money-buy">0 億</span>
+            </div>
+            <div class="metric">
+              <span class="label">賣出</span>
+              <span class="val" id="twse-money-sell">0 億</span>
+            </div>
+            <div class="metric">
+              <span class="label">現償</span>
+              <span class="val" id="twse-money-redemp">0 億</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: TWSE Short Units -->
+        <div class="glass-card stat-card" id="twse-short-card">
+          <div class="card-glow"></div>
+          <div class="stat-header">
+            <h3>上市融券餘額 (張數)</h3>
+            <span class="icon">📉</span>
+          </div>
+          <div class="stat-value" id="twse-short-val">0 張</div>
+          <div class="stat-change" id="twse-short-change">
+            <span class="arrow">--</span> <span class="change-num">0 張</span>
+          </div>
+          <div class="mini-metrics">
+            <div class="metric">
+              <span class="label">買進</span>
+              <span class="val" id="twse-short-buy">0 張</span>
+            </div>
+            <div class="metric">
+              <span class="label">賣出</span>
+              <span class="val" id="twse-short-sell">0 張</span>
+            </div>
+            <div class="metric">
+              <span class="label">現償</span>
+              <span class="val" id="twse-short-redemp">0 張</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: TPEx Margin Units -->
+        <div class="glass-card stat-card" id="tpex-margin-card">
+          <div class="card-glow"></div>
+          <div class="stat-header">
+            <h3>上櫃融資餘額 (張數)</h3>
+            <span class="icon">🏛️</span>
+          </div>
+          <div class="stat-value" id="tpex-margin-val">0 張</div>
+          <div class="stat-change" id="tpex-margin-change">
+            <span class="arrow">--</span> <span class="change-num">0 張</span>
+          </div>
+          <div class="mini-metrics">
+            <div class="metric">
+              <span class="label">買進</span>
+              <span class="val" id="tpex-margin-buy">0 張</span>
+            </div>
+            <div class="metric">
+              <span class="label">賣出</span>
+              <span class="val" id="tpex-margin-sell">0 張</span>
+            </div>
+            <div class="metric">
+              <span class="label">現償</span>
+              <span class="val" id="tpex-margin-redemp">0 張</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: TPEx Short Units -->
+        <div class="glass-card stat-card" id="tpex-short-card">
+          <div class="card-glow"></div>
+          <div class="stat-header">
+            <h3>上櫃融券餘額 (張數)</h3>
+            <span class="icon">📊</span>
+          </div>
+          <div class="stat-value" id="tpex-short-val">0 張</div>
+          <div class="stat-change" id="tpex-short-change">
+            <span class="arrow">--</span> <span class="change-num">0 張</span>
+          </div>
+          <div class="mini-metrics">
+            <div class="metric">
+              <span class="label">買進</span>
+              <span class="val" id="tpex-short-buy">0 張</span>
+            </div>
+            <div class="metric">
+              <span class="label">賣出</span>
+              <span class="val" id="tpex-short-sell">0 張</span>
+            </div>
+            <div class="metric">
+              <span class="label">現償</span>
+              <span class="val" id="tpex-short-redemp">0 張</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center Chart Section -->
+      <section class="chart-section glass-card">
+        <div class="card-glow"></div>
+        <div class="section-header">
+          <h2>大盤信用交易趨勢 (歷史走勢)</h2>
+          <div class="chart-controls">
+            <button class="btn btn-tab active" data-chart-type="money">上市融資 (億元)</button>
+            <button class="btn btn-tab" data-chart-type="short">上市融券 (張)</button>
+            <button class="btn btn-tab" data-chart-type="tpex">上櫃融資 (張)</button>
+            <button class="btn btn-tab" data-chart-type="tpex-short">上櫃融券 (張)</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="margin-chart"></canvas>
+        </div>
+      </section>
+
+      <!-- Bottom Grid: Analyst Insight & Strategy Panel -->
+      <div class="bottom-grid">
+        
+        <!-- Analyst Insights -->
+        <section class="insight-section glass-card">
+          <div class="card-glow"></div>
+          <div class="section-header">
+            <h2>🧠 AI 分析師籌碼評語</h2>
+          </div>
+          <div class="insight-content">
+            <div class="insight-badge" id="sentiment-badge">市場動向：觀察中</div>
+            <p id="insight-text">
+              請稍候，正在加載大盤籌碼數據...
+            </p>
+            <div class="insight-details">
+              <div class="detail-row">
+                <span class="label">上市資券增減比 (金額)</span>
+                <span class="val" id="insight-money-ratio">--</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">大盤空頭力道 (融券增減)</span>
+                <span class="val" id="insight-short-change">--</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Strategy Stock Picks (Future Expansion) -->
+        <section class="picks-section glass-card">
+          <div class="card-glow"></div>
+          <div class="section-header">
+            <h2>🎯 今日籌碼策略精選</h2>
+            <span class="badge badge-accent">策略儲備</span>
+          </div>
+          <div class="strategy-list">
+            <div class="strategy-item active">
+              <div class="strategy-meta">
+                <span class="strategy-name">策略一：資減價漲（籌碼洗淨）</span>
+                <p class="strategy-desc">散戶退場、主力接貨，最健康的上漲結構。</p>
+              </div>
+              <span class="strategy-status">架構就緒，待對接策略個股數據</span>
+            </div>
+            
+            <div class="strategy-item">
+              <div class="strategy-meta">
+                <span class="strategy-name">策略二：融資維持率偏低預警</span>
+                <p class="strategy-desc">追蹤大盤融資維持率接近斷頭區間，警示崩跌風險。</p>
+              </div>
+              <span class="strategy-status">待對接維持率數據</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>© 2026 AI Stock Analyst Portal. Built with GitHub Actions & GitHub Pages. 數據來源：臺灣證券交易所 & 櫃買中心。</p>
+    </footer>
+  </div>
+
+  <!-- Custom Logic Script -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+name: Daily Stock Data Update
+
+on:
+  schedule:
+    # Runs daily at 14:15 UTC (22:15 Taipei time, after TWSE updates)
+    - cron: '15 14 * * *'
+  workflow_dispatch:
+    # Allows manual trigger from the GitHub Actions tab
+    inputs:
+      target_date:
+        description: 'Target date to fetch (YYYYMMDD) - optional'
+        required: false
+        default: ''
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Required to write changes back to the repository
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch and Analyze Data
+        run: |
+          if [ "${{ github.event.inputs.target_date }}" != "" ]; then
+            node scripts/fetcher.js "${{ github.event.inputs.target_date }}"
+          else
+            node scripts/fetcher.js
+          fi
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No data changes detected. Skipping commit."
+          else
+            git commit -m "data: auto-update stock margin balances (${{ github.event.inputs.target_date || 'latest' }})"
+            git push
+          fi
