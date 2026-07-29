@@ -226,11 +226,43 @@ async function fetchDailyData(targetDateStr) {
     console.log('[Fetcher] Error fetching TPEx data:', err.message);
   }
 
+  // Fetch Three Major Institutional Investors Buy/Sell (BFI82U)
+  let parsedFund = null;
+  console.log('[Fetcher] Fetching TWSE Three Major Institutional Investors data (BFI82U)...');
+  try {
+    const fundUrl = `https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=${dateToFetch}&type=day`;
+    const res = await fetchWithTimeout(fundUrl);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.stat === 'OK' && json.data && json.data.length >= 6) {
+        const cleanBillion = (str) => {
+          if (!str) return 0;
+          return parseFloat((parseFloat(str.toString().replace(/,/g, '').trim()) / 100000000).toFixed(2)) || 0;
+        };
+
+        const rowsBfi = json.data;
+        parsedFund = {
+          dealers_self: { buy: cleanBillion(rowsBfi[0][1]), sell: cleanBillion(rowsBfi[0][2]), net: cleanBillion(rowsBfi[0][3]) },
+          dealers_hedge: { buy: cleanBillion(rowsBfi[1][1]), sell: cleanBillion(rowsBfi[1][2]), net: cleanBillion(rowsBfi[1][3]) },
+          sitc: { buy: cleanBillion(rowsBfi[2][1]), sell: cleanBillion(rowsBfi[2][2]), net: cleanBillion(rowsBfi[2][3]) },
+          foreign: { buy: cleanBillion(rowsBfi[3][1]), sell: cleanBillion(rowsBfi[3][2]), net: cleanBillion(rowsBfi[3][3]) },
+          total: { buy: cleanBillion(rowsBfi[5][1]), sell: cleanBillion(rowsBfi[5][2]), net: cleanBillion(rowsBfi[5][3]) }
+        };
+        console.log(`[Fetcher] Successfully retrieved BFI82U data for ${dateToFetch}`);
+      } else {
+        console.log(`[Fetcher] No BFI82U data available for ${dateToFetch}`);
+      }
+    }
+  } catch (err) {
+    console.log('[Fetcher] Error fetching BFI82U data:', err.message);
+  }
+
   // Combine Data into a Single Summary Node
   const finalSummary = {
     date: dateToFetch,
     twse: parsedTWSE,
     tpex: parsedTPEx,
+    fund: parsedFund,
     updated_at: new Date().toISOString()
   };
 

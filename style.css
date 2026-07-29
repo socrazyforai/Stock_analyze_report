@@ -358,17 +358,89 @@ body {
   height: 380px;
 }
 
-/* Bottom Grid: 2 Columns */
+/* Bottom Grid: 3 Columns */
 .bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr 1fr;
   gap: 1.5rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .bottom-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Fund Section Table Styles */
+.fund-section {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fund-table-container {
+  overflow-x: auto;
+  margin-top: 5px;
+}
+
+.fund-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.fund-table th,
+.fund-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fund-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fund-table td {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.fund-table tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Make numbers align to right, text align to left */
+.fund-table th:nth-child(n+2),
+.fund-table td:nth-child(n+2) {
+  text-align: right;
+}
+
+.fund-table .total-row {
+  font-weight: 700;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.fund-table .total-row td {
+  color: #fff;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.net-val {
+  font-weight: 700 !important;
+}
+
+.up-text {
+  color: var(--neon-red) !important;
+}
+
+.down-text {
+  color: var(--neon-green) !important;
 }
 
 /* Insight Section */

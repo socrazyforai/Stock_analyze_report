@@ -162,6 +162,59 @@
       <!-- Bottom Grid: Analyst Insight & Strategy Panel -->
       <div class="bottom-grid">
         
+        <!-- Three Major Institutional Investors Trading Summary -->
+        <section class="fund-section glass-card">
+          <div class="card-glow"></div>
+          <div class="section-header">
+            <h2>📊 三大法人買賣金額統計 (今日)</h2>
+            <span class="badge badge-primary">上市</span>
+          </div>
+          <div class="fund-table-container">
+            <table class="fund-table">
+              <thead>
+                <tr>
+                  <th>單位名稱</th>
+                  <th>買進 (億)</th>
+                  <th>賣出 (億)</th>
+                  <th>差額 (億)</th>
+                </tr>
+              </thead>
+              <tbody id="fund-table-body">
+                <tr>
+                  <td>自營商 (自行)</td>
+                  <td id="fund-ds-buy">0.00</td>
+                  <td id="fund-ds-sell">0.00</td>
+                  <td id="fund-ds-net" class="net-val">0.00</td>
+                </tr>
+                <tr>
+                  <td>自營商 (避險)</td>
+                  <td id="fund-dh-buy">0.00</td>
+                  <td id="fund-dh-sell">0.00</td>
+                  <td id="fund-dh-net" class="net-val">0.00</td>
+                </tr>
+                <tr>
+                  <td>投信</td>
+                  <td id="fund-sitc-buy">0.00</td>
+                  <td id="fund-sitc-sell">0.00</td>
+                  <td id="fund-sitc-net" class="net-val">0.00</td>
+                </tr>
+                <tr>
+                  <td>外資及陸資</td>
+                  <td id="fund-foreign-buy">0.00</td>
+                  <td id="fund-foreign-sell">0.00</td>
+                  <td id="fund-foreign-net" class="net-val">0.00</td>
+                </tr>
+                <tr class="total-row">
+                  <td>合計</td>
+                  <td id="fund-total-buy">0.00</td>
+                  <td id="fund-total-sell">0.00</td>
+                  <td id="fund-total-net" class="net-val">0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        
         <!-- Analyst Insights -->
         <section class="insight-section glass-card">
           <div class="card-glow"></div>

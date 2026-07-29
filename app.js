@@ -101,7 +101,45 @@ function updateDashboard(latest) {
   document.getElementById('tpex-short-sell').innerText = formatUnits(tpex.tpex_short_sell || 0);
   document.getElementById('tpex-short-redemp').innerText = formatUnits(tpex.tpex_short_redemp || 0);
 
-  // 6. Update AI Analyst Insight
+  // 6. Three Major Institutional Investors Table
+  const fund = latest.fund;
+  if (fund) {
+    const updateFundRow = (prefix, data) => {
+      const buyEl = document.getElementById(`fund-${prefix}-buy`);
+      const sellEl = document.getElementById(`fund-${prefix}-sell`);
+      const netEl = document.getElementById(`fund-${prefix}-net`);
+      
+      if (buyEl && data) buyEl.innerText = data.buy.toFixed(2);
+      if (sellEl && data) sellEl.innerText = data.sell.toFixed(2);
+      if (netEl && data) {
+        const netVal = data.net;
+        const sign = netVal >= 0 ? '+' : '';
+        netEl.innerText = `${sign}${netVal.toFixed(2)}`;
+        netEl.className = 'net-val ' + (netVal >= 0 ? 'up-text' : 'down-text');
+      }
+    };
+
+    updateFundRow('ds', fund.dealers_self);
+    updateFundRow('dh', fund.dealers_hedge);
+    updateFundRow('sitc', fund.sitc);
+    updateFundRow('foreign', fund.foreign);
+    updateFundRow('total', fund.total);
+  } else {
+    const clearFundRow = (prefix) => {
+      const buyEl = document.getElementById(`fund-${prefix}-buy`);
+      const sellEl = document.getElementById(`fund-${prefix}-sell`);
+      const netEl = document.getElementById(`fund-${prefix}-net`);
+      if (buyEl) buyEl.innerText = '--';
+      if (sellEl) sellEl.innerText = '--';
+      if (netEl) {
+        netEl.innerText = '--';
+        netEl.className = 'net-val';
+      }
+    };
+    ['ds', 'dh', 'sitc', 'foreign', 'total'].forEach(clearFundRow);
+  }
+
+  // 7. Update AI Analyst Insight
   updateAnalystCommentary(latest);
 }
 
@@ -350,7 +388,28 @@ function generateMockHistory() {
         tpex_short_buy: tpexBaseShort * 0.09,
         tpex_short_sell: tpexBaseShort * 0.09 - tpexChangeShort * 0.8,
         tpex_short_redemp: Math.abs(tpexChangeShort * 0.1)
-      }
+      },
+      fund: (function() {
+        const dsBuy = 10 + Math.random() * 10;
+        const dsSell = 10 + Math.random() * 10;
+        const dhBuy = 50 + Math.random() * 30;
+        const dhSell = 50 + Math.random() * 30;
+        const sitcBuy = 20 + Math.random() * 15;
+        const sitcSell = 20 + Math.random() * 15;
+        const foreignBuy = 300 + Math.random() * 200;
+        const foreignSell = 300 + Math.random() * 200;
+        return {
+          dealers_self: { buy: dsBuy, sell: dsSell, net: dsBuy - dsSell },
+          dealers_hedge: { buy: dhBuy, sell: dhSell, net: dhBuy - dhSell },
+          sitc: { buy: sitcBuy, sell: sitcSell, net: sitcBuy - sitcSell },
+          foreign: { buy: foreignBuy, sell: foreignSell, net: foreignBuy - foreignSell },
+          total: { 
+            buy: dsBuy + dhBuy + sitcBuy + foreignBuy, 
+            sell: dsSell + dhSell + sitcSell + foreignSell, 
+            net: (dsBuy - dsSell) + (dhBuy - dhSell) + (sitcBuy - sitcSell) + (foreignBuy - foreignSell)
+          }
+        };
+      })()
     });
   }
   return mockData;

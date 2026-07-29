@@ -36,5 +36,32 @@
                  "short_change_units":  33026,
                  "margin_buy_units":  371076,
                  "margin_redemp_units":  12646
+             },
+    "fund":  {
+                 "total":  {
+                               "sell":  4899.87,
+                               "buy":  3723.84,
+                               "net":  -1176.03
+                           },
+                 "sitc":  {
+                              "sell":  203.37,
+                              "buy":  219.49,
+                              "net":  16.12
+                          },
+                 "dealers_self":  {
+                                      "sell":  70.48,
+                                      "buy":  58.22,
+                                      "net":  -12.26
+                                  },
+                 "foreign":  {
+                                 "sell":  3799.34,
+                                 "buy":  2924.5,
+                                 "net":  -874.85
+                             },
+                 "dealers_hedge":  {
+                                       "sell":  826.67,
+                                       "buy":  521.64,
+                                       "net":  -305.04
+                                   }
              }
 }
