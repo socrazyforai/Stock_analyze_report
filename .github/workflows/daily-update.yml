@@ -33,8 +33,10 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.target_date }}" != "" ]; then
             node scripts/fetcher.js "${{ github.event.inputs.target_date }}"
+            node scripts/fetch_daily_stocks.js "${{ github.event.inputs.target_date }}"
           else
             node scripts/fetcher.js
+            node scripts/fetch_daily_stocks.js
           fi
 
       - name: Commit and Push Changes

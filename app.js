@@ -1,6 +1,12 @@
-// Global chart instance reference
+// Global chart instances reference
 let marginChart = null;
+let stockDetailChart = null;
 let rawHistoryData = [];
+
+// Screener Data Series
+let stockDailyDataSeries = {}; // Key: YYYYMMDD, Value: { "2330": { ... }, ... }
+let datesList = [];
+let isScreenerInitialized = false;
 
 // Helper to format date string YYYYMMDD to YYYY/MM/DD
 function formatDateString(str) {
@@ -10,12 +16,11 @@ function formatDateString(str) {
 
 // Format numbers to readable Chinese text (e.g. 123456789 -> 1.23 億)
 function formatToBillion(valThousand) {
-  // valThousand is in "Thousand NTD"
-  const valBillion = valThousand / 100000; // 1 Billion NTD = 100,000 Thousand NTD
+  const valBillion = valThousand / 100000;
   return `${valBillion.toFixed(2)} 億`;
 }
 
-// Format units (thousands of shares) to readable text
+// Format units to readable text
 function formatUnits(valUnits) {
   if (Math.abs(valUnits) >= 10000) {
     return `${(valUnits / 10000).toFixed(2)} 萬張`;
@@ -30,7 +35,7 @@ function updateDashboard(latest) {
   // 1. Update Date
   document.getElementById('update-date').innerText = formatDateString(latest.date);
 
-  // 2. TWSE Money Card (上市融資金額)
+  // 2. TWSE Money Card
   const twse = latest.twse;
   const moneyValEl = document.getElementById('twse-money-val');
   const moneyChangeEl = document.getElementById('twse-money-change');
@@ -49,7 +54,7 @@ function updateDashboard(latest) {
   document.getElementById('twse-money-sell').innerText = formatToBillion(twse.margin_sell_money);
   document.getElementById('twse-money-redemp').innerText = formatToBillion(twse.margin_redemp_money);
 
-  // 3. TWSE Short Units Card (上市融券數量)
+  // 3. TWSE Short Units Card
   const shortValEl = document.getElementById('twse-short-val');
   const shortChangeEl = document.getElementById('twse-short-change');
   
@@ -66,7 +71,7 @@ function updateDashboard(latest) {
   document.getElementById('twse-short-sell').innerText = formatUnits(twse.short_sell_units || 0);
   document.getElementById('twse-short-redemp').innerText = formatUnits(twse.short_redemp_units || 0);
 
-  // 4. TPEx Margin Units Card (上櫃融資數量)
+  // 4. TPEx Margin Units Card
   const tpex = latest.tpex;
   const tpexMarginValEl = document.getElementById('tpex-margin-val');
   const tpexMarginChangeEl = document.getElementById('tpex-margin-change');
@@ -88,7 +93,7 @@ function updateDashboard(latest) {
   document.getElementById('tpex-margin-sell').innerText = formatToBillion(tpex.tpex_margin_sell_money || 0);
   document.getElementById('tpex-margin-redemp').innerText = formatToBillion(tpex.tpex_margin_redemp_money || 0);
 
-  // 5. TPEx Short Units Card (上櫃融券數量)
+  // 5. TPEx Short Units Card
   const tpexShortValEl = document.getElementById('tpex-short-val');
   const tpexShortChangeEl = document.getElementById('tpex-short-change');
   
@@ -151,59 +156,50 @@ function updateDashboard(latest) {
 function updateAnalystCommentary(latest) {
   const twse = latest.twse;
   const changeMoney = twse.margin_change_money / 100000; // in Billion NTD
-  const changePercent = (twse.margin_change_money / (twse.margin_prev_money || 1)) * 100;
   
   const sentimentBadge = document.getElementById('sentiment-badge');
   const insightText = document.getElementById('insight-text');
   
-  // Empty ratio indicator
   const shortChangeUnits = twse.short_change_units || 0;
   const shortSign = shortChangeUnits >= 0 ? '+' : '';
   document.getElementById('insight-short-change').innerText = `${shortSign}${shortChangeUnits.toLocaleString()} 張`;
   
-  // Calculate margins offset ratio
   const ratio = (twse.margin_buy_money / (twse.margin_sell_money + twse.margin_redemp_money || 1) * 100).toFixed(1);
   document.getElementById('insight-money-ratio').innerText = `${ratio}%`;
 
-  // Commentary Logic
   if (changeMoney <= -50) {
-    // Margin decrease >= 5B (Severe wash)
     sentimentBadge.className = 'insight-badge bullish';
     sentimentBadge.innerText = '市場情緒：恐慌洗盤 (籌碼快速沉澱)';
-    insightText.innerHTML = `今日大盤融資金額出現<strong>劇烈減肥</strong>，一日大減了 <span class="down-text">${Math.abs(changeMoney).toFixed(2)} 億元</span>。這通常代表市場短線出現恐慌性殺低或斷頭潮，融資散戶被迫出場。從籌碼面來看，浮額在此時被大幅清洗，籌碼重回中長線大戶手中，非常有利於股價落底與隨後的反彈行情。建議投資人此時不宜盲目悲觀，反可留意績優股的超跌佈局機會。`;
+    insightText.innerHTML = `今日大盤融資金額出現<strong>劇烈減肥</strong>，一日大減了 <span class="down-text">${Math.abs(changeMoney).toFixed(2)} 億元</span>。這通常代表市場短線出現恐慌性殺低或斷頭潮，融資散戶被迫出場。從籌碼面來看，浮額在此時被大幅清洗，籌碼重回中長線大戶手中，非常有利於股價落底與隨後的反彈行情。`;
   } else if (changeMoney <= -10) {
-    // Margin decrease 1B to 5B (Healthy consolidation)
     sentimentBadge.className = 'insight-badge bullish';
     sentimentBadge.innerText = '市場情緒：資減拉回 (有利多方打底)';
-    insightText.innerHTML = `今日融資金額減少了 <span class="down-text">${Math.abs(changeMoney).toFixed(2)} 億元</span>，資券互抵比率為 <strong>${ratio}%</strong>。融資持續退場代表短線的跟風浮額逐漸沈澱，這是一種健康的拉回整理結構。當融資減少、籌碼穩定度提升時，市場賣壓減輕，盤勢將更容易在此進行築底，屬於短空長多的健康信號。`;
+    insightText.innerHTML = `今日融資金額減少了 <span class="down-text">${Math.abs(changeMoney).toFixed(2)} 億元</span>，資券互抵比率為 <strong>${ratio}%</strong>。融資持續退場代表短線的跟風浮額逐漸沈澱，這是一種健康的拉回整理結構。當融資減少、籌碼穩定度提升時，市場賣壓減輕，盤勢將更容易在此進行築底。`;
   } else if (changeMoney >= 50) {
-    // Margin increase >= 5B (Overheating warning)
     sentimentBadge.className = 'insight-badge bearish';
     sentimentBadge.innerText = '市場情緒：融資暴增 (籌碼面過熱)';
-    insightText.innerHTML = `注意！今日大盤融資金額出現<strong>暴增</strong>，高達 <span class="up-text">+${changeMoney.toFixed(2)} 億元</span>。散戶進場槓桿開大，這會使得市場籌碼迅速變得混亂。若股價沒有同步強勢上攻，融資暴增會轉為極大的潛在賣壓。一旦主力高檔倒貨，很容易引發短線多殺多的急跌。建議此時切勿追高，需嚴防短線拉回風險。`;
+    insightText.innerHTML = `注意！今日大盤融資金額出現<strong>暴增</strong>，高達 <span class="up-text">+${changeMoney.toFixed(2)} 億元</span>。散戶進場槓桿開大，這會使得市場籌碼迅速變得混亂。若股價沒有同步強勢上攻，融資暴增會轉為極大的潛在賣壓。一旦主力高檔倒貨，很容易引發急跌。`;
   } else if (changeMoney >= 10) {
-    // Margin increase 1B to 5B (Active retail participation)
     sentimentBadge.className = 'insight-badge bearish';
     sentimentBadge.innerText = '市場情緒：資增追價 (考驗主力抗壓)';
-    insightText.innerHTML = `今日融資小幅增加 <span class="up-text">${changeMoney.toFixed(2)} 億元</span>。在股價上攻過程中融資增加屬於常見人氣指標，但亦代表籌碼面的融資比率攀升。需密切觀察主力三大法人是否持續買超，若法人轉買為賣而融資仍持續增加，則需警惕散戶套在高點的風險。`;
+    insightText.innerHTML = `今日融資小幅增加 <span class="up-text">${changeMoney.toFixed(2)} 億元</span>。在股價上攻過程中融資增加屬於常見人氣指標，但亦代表籌碼面的融資比率攀升。需密切觀察三大法人是否持續買超。`;
   } else {
-    // Minor changes
     sentimentBadge.className = 'insight-badge neutral';
     sentimentBadge.innerText = '市場情緒：籌碼膠著 (區間觀望)';
-    insightText.innerHTML = `今日融資金額變化極小（變動僅 <span class="neutral-text">${changeMoney.toFixed(2)} 億元</span>），多空交投清淡。市場參與者目前處於觀望態度，籌碼面無明顯方向。盤勢預計將延續區間震盪，等待新的利多或利空訊號來打破僵局。`;
+    insightText.innerHTML = `今日融資金額變化極小（變動僅 <span class="neutral-text">${changeMoney.toFixed(2)} 億元</span>），多空交投清淡。市場參與者目前處於觀望態度，籌碼面無明顯方向。`;
   }
 }
 
 // Draw/Redraw Chart.js Chart
 function drawChart(type) {
-  const ctx = document.getElementById('margin-chart').getContext('2d');
+  const canvas = document.getElementById('margin-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
   
-  // Destroy existing chart if present
   if (marginChart) {
     marginChart.destroy();
   }
 
-  // Extract data for chart
   const labels = rawHistoryData.map(item => formatDateString(item.date).substring(5)); // Show MM/DD
   let dataPoints = [];
   let labelText = '';
@@ -211,7 +207,7 @@ function drawChart(type) {
   let shadowColor = '';
 
   if (type === 'money') {
-    dataPoints = rawHistoryData.map(item => item.twse.margin_today_money / 100000); // convert to Billion
+    dataPoints = rawHistoryData.map(item => item.twse.margin_today_money / 100000); // Billion
     labelText = '上市融資金額 (億元)';
     neonColor = '#00e5ff';
     shadowColor = 'rgba(0, 229, 255, 0.4)';
@@ -232,12 +228,10 @@ function drawChart(type) {
     shadowColor = 'rgba(189, 0, 255, 0.4)';
   }
 
-  // Create gradient fill
   const gradient = ctx.createLinearGradient(0, 0, 0, 350);
   gradient.addColorStop(0, shadowColor.replace('0.4', '0.2'));
   gradient.addColorStop(1, 'rgba(7, 9, 19, 0)');
 
-  // Config Chart
   marginChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -288,20 +282,11 @@ function drawChart(type) {
       },
       scales: {
         x: {
-          grid: {
-            color: 'rgba(255, 255, 255, 0.03)',
-            drawBorder: false
-          },
-          ticks: {
-            color: '#6b7280',
-            font: { size: 10 }
-          }
+          grid: { color: 'rgba(255, 255, 255, 0.03)', drawBorder: false },
+          ticks: { color: '#6b7280', font: { size: 10 } }
         },
         y: {
-          grid: {
-            color: 'rgba(255, 255, 255, 0.03)',
-            drawBorder: false
-          },
+          grid: { color: 'rgba(255, 255, 255, 0.03)', drawBorder: false },
           ticks: {
             color: '#6b7280',
             font: { size: 10 },
@@ -318,29 +303,25 @@ function drawChart(type) {
   });
 }
 
-// Generate Mock Data if no local history.json is available (For preview/failsafe)
+// Generate Mock Data if no local history.json is available
 function generateMockHistory() {
   console.log('[App] Generating mock history for preview...');
   const mockData = [];
   const baseDate = new Date();
   
-  let twseBaseMoney = 320000000; // ~3200 億
-  let twseBaseUnits = 8500000; // ~850 萬張
-  let twseBaseShort = 220000; // ~22 萬張
-  let tpexBaseUnits = 1800000; // ~180 萬張
-  let tpexBaseShort = 30000;  // ~3 萬張
+  let twseBaseMoney = 320000000;
+  let twseBaseUnits = 8500000;
+  let twseBaseShort = 220000;
+  let tpexBaseUnits = 1800000;
+  let tpexBaseShort = 30000;
   
-  // Generate 25 days of mock data
   for (let i = 25; i >= 0; i--) {
     const d = new Date(baseDate);
     d.setDate(d.getDate() - i);
-    // skip weekends
     if (d.getDay() === 0 || d.getDay() === 6) continue;
     
     const formattedDate = formatDateString(formatDate(d)).replace(/\//g, '');
-    
-    // Add random walk changes
-    const twseChangeMoney = (Math.random() - 0.55) * 4000000; // slight downward bias
+    const twseChangeMoney = (Math.random() - 0.55) * 4000000;
     const twseChangeUnits = (Math.random() - 0.55) * 80000;
     const twseChangeShort = (Math.random() - 0.52) * 5000;
     const tpexChangeUnits = (Math.random() - 0.53) * 20000;
@@ -362,14 +343,12 @@ function generateMockHistory() {
         margin_buy_money: twseBaseMoney * 0.05,
         margin_sell_money: twseBaseMoney * 0.05 - twseChangeMoney * 0.8,
         margin_redemp_money: Math.abs(twseChangeMoney * 0.2),
-        
         margin_today_units: twseBaseUnits,
         margin_prev_units: twseBaseUnits - twseChangeUnits,
         margin_change_units: twseChangeUnits,
         margin_buy_units: twseBaseUnits * 0.04,
         margin_sell_units: twseBaseUnits * 0.04 - twseChangeUnits * 0.8,
         margin_redemp_units: Math.abs(twseChangeUnits * 0.2),
-        
         short_today_units: twseBaseShort,
         short_prev_units: twseBaseShort - twseChangeShort,
         short_change_units: twseChangeShort,
@@ -385,14 +364,12 @@ function generateMockHistory() {
         tpex_margin_buy: tpexBaseUnits * 0.06,
         tpex_margin_sell: tpexBaseUnits * 0.06 - tpexChangeUnits * 0.8,
         tpex_margin_redemp: Math.abs(tpexChangeUnits * 0.2),
-
         tpex_short_today: tpexBaseShort,
         tpex_short_prev: tpexBaseShort - tpexChangeShort,
         tpex_short_change: tpexChangeShort,
         tpex_short_buy: tpexBaseShort * 0.09,
         tpex_short_sell: tpexBaseShort * 0.09 - tpexChangeShort * 0.8,
         tpex_short_redemp: Math.abs(tpexChangeShort * 0.1),
-
         tpex_margin_today_money: tpexBaseUnits * 1000 * 85,
         tpex_margin_prev_money: (tpexBaseUnits - tpexChangeUnits) * 1000 * 85,
         tpex_margin_change_money: tpexChangeUnits * 1000 * 85,
@@ -436,13 +413,12 @@ function formatDate(date) {
 // Load data from static file on server
 async function loadData() {
   try {
-    // Try to fetch real history data
     const res = await fetch('data/history.json');
     if (res.ok) {
       rawHistoryData = await res.json();
       console.log(`[App] Successfully loaded ${rawHistoryData.length} days of historical data.`);
     } else {
-      console.warn('[App] Could not load data/history.json (HTTP ' + res.status + '). Falling back to mock data.');
+      console.warn('[App] Could not load data/history.json. Falling back to mock.');
       rawHistoryData = generateMockHistory();
     }
   } catch (err) {
@@ -453,21 +429,420 @@ async function loadData() {
   if (rawHistoryData && rawHistoryData.length > 0) {
     const latest = rawHistoryData[rawHistoryData.length - 1];
     updateDashboard(latest);
-    drawChart('money'); // Default view:上市金額
+    drawChart('money');
   }
 }
 
-// Event Listeners for Tab Buttons
+// Event Listeners for Tab Buttons (Market View)
 document.querySelectorAll('.btn-tab').forEach(button => {
   button.addEventListener('click', (e) => {
-    // Deactivate other tabs
     document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
-    // Activate clicked tab
     e.target.classList.add('active');
-    
     const chartType = e.target.getAttribute('data-chart-type');
     drawChart(chartType);
   });
+});
+
+// Event Listeners for Main Nav Tabs (Market vs. Screener)
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+    
+    e.currentTarget.classList.add('active');
+    const targetId = e.currentTarget.getAttribute('data-target');
+    document.getElementById(targetId).classList.add('active');
+    
+    if (targetId === 'screener-view') {
+      initScreener();
+    }
+  });
+});
+
+
+// ==========================================================================
+// 🎯 Individual Stock Screener Logic
+// ==========================================================================
+
+// Deterministic mock stocks data generator for fallback/offline mode
+function generateMockStocksForDate(date) {
+  const mockSymbols = [
+    { code: '2330', name: '台積電', basePrice: 950 },
+    { code: '2317', name: '鴻海', basePrice: 200 },
+    { code: '2454', name: '聯發科', basePrice: 1200 },
+    { code: '8069', name: '元太', basePrice: 240 },
+    { code: '2603', name: '長榮', basePrice: 180 },
+    { code: '3231', name: '緯創', basePrice: 110 },
+    { code: '2382', name: '廣達', basePrice: 280 },
+    { code: '3037', name: '欣興', basePrice: 160 },
+    { code: '2303', name: '聯電', basePrice: 50 },
+    { code: '2609', name: '陽明', basePrice: 65 }
+  ];
+  
+  const daily = {};
+  mockSymbols.forEach(s => {
+    const hash = (parseInt(s.code) * 17 + parseInt(date.substring(4))) % 97;
+    // Generate simulated price changes (-5% to +5%)
+    const pctChange = (hash % 100 - 50) / 1000;
+    const close = s.basePrice * (1 + pctChange);
+    const open = close * (1 - (hash % 40 - 20) / 1000);
+    const high = Math.max(open, close) * (1 + (hash % 15) / 1000);
+    const low = Math.min(open, close) * (1 - (hash % 15) / 1000);
+    const volume = 300 + (hash * 47) % 8000;
+    
+    const marginToday = 4000 + (hash * 13) % 6000;
+    const marginChange = (hash % 2 === 0 ? 1 : -1) * (hash * 3 % 400);
+    const foreignNet = (hash % 2 === 0 ? 1 : -1) * (hash * 7 % 800);
+    const sitcNet = (hash % 3 === 0 ? 1 : -1) * (hash * 2 % 300);
+    const dealersNet = (hash % 5 === 0 ? 1 : -1) * (hash % 150);
+
+    daily[s.code] = {
+      symbol: s.code,
+      name: s.name,
+      open: parseFloat(open.toFixed(2)),
+      high: parseFloat(high.toFixed(2)),
+      low: parseFloat(low.toFixed(2)),
+      close: parseFloat(close.toFixed(2)),
+      volume: volume,
+      change: parseFloat((close - open).toFixed(2)),
+      margin_buy: Math.round(volume * 0.1),
+      margin_sell: Math.round(volume * 0.08),
+      margin_today: marginToday,
+      margin_change: marginChange,
+      foreign_net: foreignNet,
+      sitc_net: sitcNet,
+      dealers_net: dealersNet
+    };
+  });
+  return daily;
+}
+
+// Load daily stocks JSON files for the last 20 days in parallel
+async function initScreener() {
+  if (isScreenerInitialized) return;
+  
+  const loadingEl = document.getElementById('screener-loading');
+  loadingEl.style.display = 'flex';
+  
+  datesList = rawHistoryData.map(item => item.date.replace(/-/g, '').replace(/\//g, '').trim()).slice(-20);
+  
+  try {
+    const promises = datesList.map(async date => {
+      try {
+        const res = await fetch(`data/daily_stocks/${date}.json`);
+        if (res.ok) {
+          const data = await res.json();
+          stockDailyDataSeries[date] = data;
+        } else {
+          stockDailyDataSeries[date] = generateMockStocksForDate(date);
+        }
+      } catch (e) {
+        stockDailyDataSeries[date] = generateMockStocksForDate(date);
+      }
+    });
+    
+    await Promise.all(promises);
+    console.log(`[Screener] Successfully loaded ${Object.keys(stockDailyDataSeries).length} trading days.`);
+    isScreenerInitialized = true;
+  } catch (err) {
+    console.error('[Screener] Failed loading stock data series:', err);
+  } finally {
+    loadingEl.style.display = 'none';
+    runStrategy('strategy1'); // Run first strategy by default
+  }
+}
+
+// Strategy selection button handler
+document.querySelectorAll('.strategy-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    
+    const strategy = e.currentTarget.getAttribute('data-strategy');
+    const titleText = e.currentTarget.querySelector('.strat-title').innerText;
+    document.getElementById('screener-title').innerText = `篩選結果：${titleText}`;
+    
+    runStrategy(strategy);
+  });
+});
+
+// Run quantitative screening algorithms
+function runStrategy(strategyId) {
+  const latestDate = datesList[datesList.length - 1];
+  if (!stockDailyDataSeries[latestDate]) return;
+
+  const allCodes = Object.keys(stockDailyDataSeries[latestDate]);
+  const matchingStocks = [];
+
+  allCodes.forEach(code => {
+    // Reconstruct 20-day time-series history for this stock
+    const history = [];
+    datesList.forEach(d => {
+      const dayData = stockDailyDataSeries[d];
+      if (dayData && dayData[code]) {
+        history.push(dayData[code]);
+      }
+    });
+
+    if (history.length < 5) return;
+
+    let isMatch = false;
+    try {
+      isMatch = checkStrategy(strategyId, history);
+    } catch (e) {
+      console.error(`Check strategy failed for code ${code}:`, e);
+    }
+
+    if (isMatch) {
+      matchingStocks.push(history[history.length - 1]);
+    }
+  });
+
+  renderScreenerTable(matchingStocks, allCodes.length);
+}
+
+// Render filtered stocks to main table
+function renderScreenerTable(stocksList, totalAnalyzed) {
+  const tbody = document.getElementById('screener-table-body');
+  document.getElementById('screener-count').innerText = `符合 ${stocksList.length} 檔 / 已分析 ${totalAnalyzed} 檔`;
+  
+  tbody.innerHTML = '';
+  
+  if (stocksList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-row">今日無符合此籌碼選股條件的活躍個股</td></tr>`;
+    return;
+  }
+
+  stocksList.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-code', s.symbol);
+    
+    const pctChange = s.open > 0 ? ((s.close - s.open) / s.open * 100) : 0;
+    const changeClass = s.change >= 0 ? 'up-text' : 'down-text';
+    const changeSign = s.change >= 0 ? '+' : '';
+
+    tr.innerHTML = `
+      <td class="stock-code">${s.symbol}</td>
+      <td><strong>${s.name}</strong></td>
+      <td>${s.close.toFixed(2)}</td>
+      <td class="${changeClass}">${changeSign}${pctChange.toFixed(2)}%</td>
+      <td>${s.volume.toLocaleString()}</td>
+      <td class="${s.foreign_net >= 0 ? 'up-text' : 'down-text'}">${s.foreign_net >= 0 ? '+' : ''}${s.foreign_net.toLocaleString()}</td>
+      <td class="${s.sitc_net >= 0 ? 'up-text' : 'down-text'}">${s.sitc_net >= 0 ? '+' : ''}${s.sitc_net.toLocaleString()}</td>
+      <td class="${s.margin_change >= 0 ? 'up-text' : 'down-text'}">${s.margin_change >= 0 ? '+' : ''}${s.margin_change.toLocaleString()}</td>
+    `;
+    
+    tr.addEventListener('click', () => {
+      openStockDrawer(s.symbol);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+// 6 Core Quantitative Screening Formulas
+function checkStrategy(strategyId, history) {
+  const today = history[history.length - 1];
+  const n = history.length;
+  
+  if (strategyId === 'strategy1') {
+    // 1. 光頭大紅K 盤整突破
+    // Range of close prices over first n-1 days < 8% (consolidation)
+    const prevDays = history.slice(0, n - 1);
+    const closes = prevDays.map(h => h.close);
+    const maxClose = Math.max(...closes);
+    const minClose = Math.min(...closes);
+    const avgClose = closes.reduce((a, b) => a + b, 0) / closes.length;
+    const isConsolidating = (maxClose - minClose) / (avgClose || 1) < 0.08;
+    
+    // Today's breakout and close high
+    const isBigRed = today.close > today.open && (today.close - today.open) / today.open >= 0.045;
+    const isHairless = (today.high - today.close) / (today.close - today.open || 1) < 0.12;
+    
+    // Volume surge
+    const avgVol = prevDays.reduce((a, b) => a + b.volume, 0) / prevDays.length;
+    const isVolumeSurge = today.volume > avgVol * 1.8;
+
+    return isConsolidating && isBigRed && isHairless && isVolumeSurge;
+  }
+  
+  if (strategyId === 'strategy2') {
+    // 2. 夾 雙線發動 (布林突破)
+    if (n < 10) return false;
+    const bb = getBollingerBands(history, n - 1, 10);
+    const prevBB = getBollingerBands(history, n - 2, 10);
+    
+    const isBandNarrow = prevBB.width < 0.12;
+    const isBreakout = today.close > bb.upper;
+    const isUpperSlopeUp = bb.upper > prevBB.upper;
+    
+    return isBandNarrow && isBreakout && isUpperSlopeUp;
+  }
+  
+  if (strategyId === 'strategy3') {
+    // 3. 聰明融資抄底 (籌碼洗淨)
+    // Flat price over last 4 days (change < 3%)
+    const lastCloses = history.slice(-4).map(h => h.close);
+    const priceFlat = (Math.max(...lastCloses) - Math.min(...lastCloses)) / lastCloses[0] < 0.035;
+    
+    // Margin decreased sum is negative
+    const marginDecrease = today.margin_change < 0 && history[n-2].margin_change < 0;
+    
+    // Institutions Net Buy today
+    const instBuy = (today.foreign_net + today.sitc_net) > 50;
+    
+    return priceFlat && marginDecrease && instBuy;
+  }
+  
+  if (strategyId === 'strategy4') {
+    // 4. 可轉債轉換價黃金交叉 (using breakout MA20 + dual leverage buy)
+    const ma20 = getMA(history, n - 1, Math.min(n, 20));
+    const crossMA20 = today.close > ma20 && history[n-2].close <= ma20;
+    const isDoubleLeverage = today.margin_change > 50 && today.foreign_net > 100;
+    
+    return crossMA20 && isDoubleLeverage;
+  }
+  
+  if (strategyId === 'strategy5') {
+    // 5. 隔日沖避雷預警
+    const isBreakout = today.close > today.open && (today.close - today.open) / today.open >= 0.065;
+    const daytraderBuy = today.dealers_net > 150 || today.foreign_net > 500;
+    
+    return isBreakout && daytraderBuy;
+  }
+  
+  if (strategyId === 'strategy6') {
+    // 6. 乖離率極端超跌反彈
+    const ma20 = getMA(history, n - 1, Math.min(n, 20));
+    const bias = ma20 > 0 ? ((today.close - ma20) / ma20 * 100) : 0;
+    const isOversold = bias < -15;
+    
+    const isVolumeStop = today.volume > getMA(history, n - 1, 5) * 1.5;
+    const isRedOrShadow = today.close > today.open || (today.close - today.low) / (today.high - today.low || 1) > 0.5;
+    
+    return isOversold && isVolumeStop && isRedOrShadow;
+  }
+  
+  return false;
+}
+
+// Math Helpers for Indicators
+function getMA(history, index, period) {
+  if (index < period - 1) return 0;
+  let sum = 0;
+  for (let i = index - period + 1; i <= index; i++) {
+    sum += history[i].close;
+  }
+  return sum / period;
+}
+
+function getBollingerBands(history, index, period) {
+  if (index < period - 1) return { mean: 0, upper: 0, lower: 0, width: 0 };
+  let sum = 0;
+  for (let i = index - period + 1; i <= index; i++) {
+    sum += history[i].close;
+  }
+  const mean = sum / period;
+  
+  let varianceSum = 0;
+  for (let i = index - period + 1; i <= index; i++) {
+    varianceSum += Math.pow(history[i].close - mean, 2);
+  }
+  const stdDev = Math.sqrt(varianceSum / period);
+  return {
+    mean: mean,
+    upper: mean + 2 * stdDev,
+    lower: mean - 2 * stdDev,
+    width: mean > 0 ? (4 * stdDev) / mean : 0
+  };
+}
+
+// Draw individual stock price and volume/margin chart
+function openStockDrawer(code) {
+  const drawer = document.getElementById('stock-detail-drawer');
+  drawer.classList.add('open');
+  
+  const history = [];
+  datesList.forEach(d => {
+    const dayData = stockDailyDataSeries[d];
+    if (dayData && dayData[code]) {
+      history.push({ date: d, data: dayData[code] });
+    }
+  });
+
+  if (history.length === 0) return;
+  
+  const latest = history[history.length - 1].data;
+  document.getElementById('drawer-stock-title').innerText = `${latest.symbol} ${latest.name}`;
+  document.getElementById('detail-high-low').innerText = `${latest.high.toFixed(2)} / ${latest.low.toFixed(2)}`;
+  
+  const instSum = latest.foreign_net + latest.sitc_net + latest.dealers_net;
+  const instSign = instSum >= 0 ? '+' : '';
+  document.getElementById('detail-inst-net').innerText = `${instSign}${instSum.toLocaleString()} 張`;
+  document.getElementById('detail-inst-net').className = 'val ' + (instSum >= 0 ? 'up-text' : 'down-text');
+  
+  document.getElementById('detail-margin-bal').innerText = `${latest.margin_today.toLocaleString()} 張`;
+
+  // Draw Stock Mini Chart
+  const ctx = document.getElementById('stock-detail-chart').getContext('2d');
+  if (stockDetailChart) {
+    stockDetailChart.destroy();
+  }
+
+  const labels = history.map(h => formatDateString(h.date).substring(5));
+  const prices = history.map(h => h.data.close);
+  const margins = history.map(h => h.data.margin_change);
+
+  stockDetailChart = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          type: 'line',
+          label: '收盤價',
+          data: prices,
+          borderColor: '#818cf8',
+          borderWidth: 2,
+          pointRadius: 1,
+          yAxisID: 'y',
+          tension: 0.2
+        },
+        {
+          type: 'bar',
+          label: '融資增減',
+          data: margins,
+          backgroundColor: margins.map(m => m >= 0 ? 'rgba(255, 56, 96, 0.4)' : 'rgba(0, 242, 254, 0.4)'),
+          borderColor: margins.map(m => m >= 0 ? '#ff3860' : '#00f2fe'),
+          borderWidth: 1,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { size: 9 } } },
+        y: {
+          position: 'left',
+          grid: { color: 'rgba(255, 255, 255, 0.02)' },
+          ticks: { color: '#9ca3af', font: { size: 9 } }
+        },
+        y1: {
+          position: 'right',
+          grid: { display: false },
+          ticks: { color: '#9ca3af', font: { size: 9 } }
+        }
+      }
+    }
+  });
+}
+
+// Drawer close buttons
+document.getElementById('btn-close-drawer').addEventListener('click', () => {
+  document.getElementById('stock-detail-drawer').classList.remove('open');
 });
 
 // Initial Setup

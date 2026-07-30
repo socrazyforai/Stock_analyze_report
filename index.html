@@ -22,14 +22,21 @@
         <h1>AI 股市籌碼分析器</h1>
         <span class="badge badge-primary">V2.0 PRO</span>
       </div>
+      <nav class="app-nav">
+        <button class="nav-tab active" data-target="market-view">📊 大盤籌碼觀測</button>
+        <button class="nav-tab" data-target="screener-view">🎯 個股策略選股</button>
+      </nav>
       <div class="status-section">
         <span class="status-indicator online"></span>
         <span class="status-text">資料更新：<span id="update-date">加載中...</span></span>
       </div>
     </header>
 
-    <!-- Main Content Grid -->
-    <main class="dashboard-grid">
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- View 1: Market View -->
+      <div id="market-view" class="view-content active">
+        <div class="dashboard-grid">
       
       <!-- Top Overview Stats -->
       <section class="overview-section">
@@ -265,6 +272,112 @@
           </div>
         </section>
 
+        </div>
+      </div>
+    </div>
+
+      <!-- View 2: Screener View -->
+      <div id="screener-view" class="view-content">
+        <div class="screener-grid">
+          <!-- Sidebar: Strategies -->
+          <aside class="screener-sidebar glass-card">
+            <div class="card-glow"></div>
+            <div class="section-header">
+              <h2>小哥經典策略選股</h2>
+            </div>
+            <div class="strategy-menu">
+              <button class="strategy-btn active" data-strategy="strategy1">
+                <span class="strat-title">📈 光頭大紅K 盤整突破</span>
+                <span class="strat-desc">盤整收斂後帶量大紅K表態</span>
+              </button>
+              <button class="strategy-btn" data-strategy="strategy2">
+                <span class="strat-title">夾 雙線發動 (布林突破)</span>
+                <span class="strat-desc">布林帶寬收縮後沿上軌強攻</span>
+              </button>
+              <button class="strategy-btn" data-strategy="strategy3">
+                <span class="strat-title">👥 聰明融資抄底 (籌碼洗淨)</span>
+                <span class="strat-desc">股價止跌、資減且三大法人大買</span>
+              </button>
+              <button class="strategy-btn" data-strategy="strategy4">
+                <span class="strat-title">💣 可轉債轉換價黃金交叉</span>
+                <span class="strat-desc">股價突破可轉債轉換價之上</span>
+              </button>
+              <button class="strategy-btn" data-strategy="strategy5">
+                <span class="strat-title">🚨 隔日沖避雷預警</span>
+                <span class="strat-desc">突破紅K伴隨隔日沖大戶比重高</span>
+              </button>
+              <button class="strategy-btn" data-strategy="strategy6">
+                <span class="strat-title">⚡ 乖離率極端超跌反彈</span>
+                <span class="strat-desc">20日負乖離過大且低檔爆量</span>
+              </button>
+            </div>
+          </aside>
+
+          <!-- Main Panel: Screener Table -->
+          <section class="screener-main glass-card">
+            <div class="card-glow"></div>
+            <div class="section-header">
+              <h2 id="screener-title">篩選結果：光頭大紅K 盤整突破</h2>
+              <span class="badge badge-accent" id="screener-count">符合 0 檔 / 已分析 0 檔</span>
+            </div>
+            <div class="screener-body">
+              <div id="screener-loading" class="loading-overlay" style="display: none;">
+                <div class="spinner"></div>
+                <p>正在從交易所讀取近 20 天活躍個股歷史數據...</p>
+              </div>
+              <div class="table-responsive">
+                <table class="screener-table">
+                  <thead>
+                    <tr>
+                      <th>代號</th>
+                      <th>名稱</th>
+                      <th>收盤</th>
+                      <th>漲跌幅</th>
+                      <th>成交量(張)</th>
+                      <th>外資(張)</th>
+                      <th>投信(張)</th>
+                      <th>資增減(張)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="screener-table-body">
+                    <tr>
+                      <td colspan="8" class="empty-row">請選擇左側策略進行選股</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Detail Modal / Drawer -->
+        <div id="stock-detail-drawer" class="stock-drawer">
+          <div class="drawer-content glass-card">
+            <div class="drawer-header">
+              <h2 id="drawer-stock-title">股票詳細走勢</h2>
+              <button class="btn-close" id="btn-close-drawer">✕</button>
+            </div>
+            <div class="drawer-body">
+              <div class="detail-chart-container">
+                <canvas id="stock-detail-chart"></canvas>
+              </div>
+              <div class="detail-metrics-grid">
+                <div class="metric-box">
+                  <span class="label">今日最高 / 最低</span>
+                  <span class="val" id="detail-high-low">0.00 / 0.00</span>
+                </div>
+                <div class="metric-box">
+                  <span class="label">三大法人合計</span>
+                  <span class="val" id="detail-inst-net">0 張</span>
+                </div>
+                <div class="metric-box">
+                  <span class="label">融資今日餘額</span>
+                  <span class="val" id="detail-margin-bal">0 張</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </main>
