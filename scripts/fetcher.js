@@ -202,6 +202,51 @@ async function fetchDailyData(targetDateStr) {
           sumShortToday += cleanInt(item.ShortSaleBalance);
         }
 
+        // Fetch TPEx Margin Balance Money from PHP page
+        let tpexMarginMoney = { prev: 0, today: 0, change: 0, buy: 0, sell: 0, redemp: 0 };
+        try {
+          const minguoYear = parseInt(tpexMinguoDate.substring(0, tpexMinguoDate.length - 4), 10);
+          const minguoMd = tpexMinguoDate.substring(tpexMinguoDate.length - 4);
+          const formattedMinguo = `${minguoYear}/${minguoMd.substring(0,2)}/${minguoMd.substring(2)}`;
+          
+          const phpUrl = `https://www.tpex.org.tw/web/stock/margin_trading/margin_balance/margin_bal_result.php?l=zh-tw&d=${formattedMinguo}`;
+          console.log(`[Fetcher] Fetching TPEx summary money from legacy endpoint: ${phpUrl}`);
+          
+          await new Promise(resolve => setTimeout(resolve, 1000)); // rate limiting delay
+          const phpRes = await fetchWithTimeout(phpUrl);
+          if (phpRes.ok) {
+            const phpJson = await phpRes.json();
+            const summaryRows = phpJson.summary;
+            if (summaryRows && summaryRows.length >= 2) {
+              const tokens = summaryRows[1];
+              if (tokens && tokens.length >= 7) {
+                const cleanToken = (t) => {
+                  if (!t) return 0;
+                  return parseInt(t.replace(/,/g, ''), 10) || 0;
+                };
+                
+                const prevThousand = cleanToken(tokens[2]);
+                const buyThousand = cleanToken(tokens[3]);
+                const sellThousand = cleanToken(tokens[4]);
+                const redempThousand = cleanToken(tokens[5]);
+                const todayThousand = cleanToken(tokens[6]);
+                
+                tpexMarginMoney = {
+                  prev: prevThousand * 1000,
+                  buy: buyThousand * 1000,
+                  sell: sellThousand * 1000,
+                  redemp: redempThousand * 1000,
+                  today: todayThousand * 1000,
+                  change: (todayThousand - prevThousand) * 1000
+                };
+                console.log(`[Fetcher] Successfully parsed TPEx money values: Today=${tpexMarginMoney.today}, Change=${tpexMarginMoney.change}`);
+              }
+            }
+          }
+        } catch (phpErr) {
+          console.log('[Fetcher] Error fetching TPEx PHP summary:', phpErr.message);
+        }
+
         parsedTPEx = {
           date: tpexAdDate,
           tpex_margin_buy: sumMarginBuy,
@@ -216,7 +261,14 @@ async function fetchDailyData(targetDateStr) {
           tpex_short_redemp: sumShortRedemp,
           tpex_short_prev: sumShortPrev,
           tpex_short_today: sumShortToday,
-          tpex_short_change: sumShortToday - sumShortPrev
+          tpex_short_change: sumShortToday - sumShortPrev,
+          
+          tpex_margin_prev_money: tpexMarginMoney.prev,
+          tpex_margin_today_money: tpexMarginMoney.today,
+          tpex_margin_change_money: tpexMarginMoney.change,
+          tpex_margin_buy_money: tpexMarginMoney.buy,
+          tpex_margin_sell_money: tpexMarginMoney.sell,
+          tpex_margin_redemp_money: tpexMarginMoney.redemp
         };
       }
     } else {

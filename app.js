@@ -71,18 +71,22 @@ function updateDashboard(latest) {
   const tpexMarginValEl = document.getElementById('tpex-margin-val');
   const tpexMarginChangeEl = document.getElementById('tpex-margin-change');
   
-  tpexMarginValEl.innerText = formatUnits(tpex.tpex_margin_today || 0);
+  const tpexTodayMoneyBillion = (tpex.tpex_margin_today_money || 0) / 100000000;
+  const tpexChangeMoneyBillion = (tpex.tpex_margin_change_money || 0) / 100000000;
+  const tpexPrevMoney = tpex.tpex_margin_prev_money || 1;
+  const tpexChangePercent = ((tpex.tpex_margin_change_money || 0) / tpexPrevMoney) * 100;
   
-  const txMarginChange = tpex.tpex_margin_change || 0;
-  const txMarginSignText = txMarginChange >= 0 ? '資增' : '資減';
+  tpexMarginValEl.innerText = `${tpexTodayMoneyBillion.toFixed(2)} 億`;
   
-  tpexMarginChangeEl.className = 'stat-change ' + (txMarginChange >= 0 ? 'up' : 'down');
+  const txMarginSignText = tpexChangeMoneyBillion >= 0 ? '資增' : '資減';
+  
+  tpexMarginChangeEl.className = 'stat-change ' + (tpexChangeMoneyBillion >= 0 ? 'up' : 'down');
   tpexMarginChangeEl.querySelector('.arrow').innerText = '';
-  tpexMarginChangeEl.querySelector('.change-num').innerText = `${txMarginSignText} ${Math.abs(txMarginChange).toLocaleString()} 張`;
+  tpexMarginChangeEl.querySelector('.change-num').innerText = `${txMarginSignText} ${Math.abs(tpexChangeMoneyBillion).toFixed(2)} 億 (${tpexChangeMoneyBillion >= 0 ? '+' : ''}${tpexChangePercent.toFixed(2)}%)`;
 
-  document.getElementById('tpex-margin-buy').innerText = formatUnits(tpex.tpex_margin_buy || 0);
-  document.getElementById('tpex-margin-sell').innerText = formatUnits(tpex.tpex_margin_sell || 0);
-  document.getElementById('tpex-margin-redemp').innerText = formatUnits(tpex.tpex_margin_redemp || 0);
+  document.getElementById('tpex-margin-buy').innerText = formatToBillion(tpex.tpex_margin_buy_money || 0);
+  document.getElementById('tpex-margin-sell').innerText = formatToBillion(tpex.tpex_margin_sell_money || 0);
+  document.getElementById('tpex-margin-redemp').innerText = formatToBillion(tpex.tpex_margin_redemp_money || 0);
 
   // 5. TPEx Short Units Card (上櫃融券數量)
   const tpexShortValEl = document.getElementById('tpex-short-val');
@@ -217,8 +221,8 @@ function drawChart(type) {
     neonColor = '#ff3860';
     shadowColor = 'rgba(255, 56, 96, 0.4)';
   } else if (type === 'tpex') {
-    dataPoints = rawHistoryData.map(item => item.tpex.tpex_margin_today || 0);
-    labelText = '上櫃融資張數 (張)';
+    dataPoints = rawHistoryData.map(item => (item.tpex.tpex_margin_today_money || 0) / 100000000);
+    labelText = '上櫃融資金額 (億元)';
     neonColor = '#10b981';
     shadowColor = 'rgba(16, 185, 129, 0.4)';
   } else if (type === 'tpex-short') {
@@ -274,7 +278,7 @@ function drawChart(type) {
           callbacks: {
             label: function(context) {
               const val = context.parsed.y;
-              if (type === 'money') {
+              if (type === 'money' || type === 'tpex') {
                 return `餘額: ${val.toFixed(2)} 億元`;
               }
               return `餘額: ${val.toLocaleString()} 張`;
@@ -302,7 +306,7 @@ function drawChart(type) {
             color: '#6b7280',
             font: { size: 10 },
             callback: function(value) {
-              if (type === 'money') return value + ' 億';
+              if (type === 'money' || type === 'tpex') return value + ' 億';
               if (value >= 1000000) return (value / 1000000) + 'M';
               if (value >= 1000) return (value / 1000) + 'K';
               return value;
@@ -387,7 +391,14 @@ function generateMockHistory() {
         tpex_short_change: tpexChangeShort,
         tpex_short_buy: tpexBaseShort * 0.09,
         tpex_short_sell: tpexBaseShort * 0.09 - tpexChangeShort * 0.8,
-        tpex_short_redemp: Math.abs(tpexChangeShort * 0.1)
+        tpex_short_redemp: Math.abs(tpexChangeShort * 0.1),
+
+        tpex_margin_today_money: tpexBaseUnits * 1000 * 85,
+        tpex_margin_prev_money: (tpexBaseUnits - tpexChangeUnits) * 1000 * 85,
+        tpex_margin_change_money: tpexChangeUnits * 1000 * 85,
+        tpex_margin_buy_money: (tpexBaseUnits * 0.06) * 1000 * 85,
+        tpex_margin_sell_money: (tpexBaseUnits * 0.06 - tpexChangeUnits * 0.8) * 1000 * 85,
+        tpex_margin_redemp_money: Math.abs(tpexChangeUnits * 0.2) * 1000 * 85
       },
       fund: (function() {
         const dsBuy = 10 + Math.random() * 10;
