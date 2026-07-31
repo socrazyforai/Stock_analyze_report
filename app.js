@@ -414,7 +414,7 @@ function formatDate(date) {
 // Load data from static file on server
 async function loadData() {
   try {
-    const res = await fetch('data/history.json');
+    const res = await fetch('data/history.json?v=2.6');
     if (res.ok) {
       rawHistoryData = await res.json();
       console.log(`[App] Successfully loaded ${rawHistoryData.length} days of historical data.`);
@@ -530,7 +530,7 @@ async function initScreener() {
   try {
     const promises = datesList.map(async date => {
       try {
-        const res = await fetch(`data/daily_stocks/${date}.json`);
+        const res = await fetch(`data/daily_stocks/${date}.json?v=2.6`);
         if (res.ok) {
           const data = await res.json();
           stockDailyDataSeries[date] = data;
@@ -915,8 +915,8 @@ function drawAnalysisPriceChart() {
       "style": "1",
       "locale": "zh_TW",
       "enable_publishing": false,
-      "hide_side_toolbar": true,
-      "allow_symbol_change": false,
+      "hide_side_toolbar": false,
+      "allow_symbol_change": true,
       "container_id": "analysis-price-chart",
       "studies": [
         "MASimple@tv-basicstudies",
