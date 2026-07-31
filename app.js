@@ -411,16 +411,52 @@ function formatDate(date) {
   return `${y}${m}${d}`;
 }
 
+// Get the previous weekday (skipping Saturday and Sunday)
+function getPreviousTradingDay(dateStr) {
+  const year = parseInt(dateStr.substring(0, 4));
+  const month = parseInt(dateStr.substring(4, 6)) - 1;
+  const day = parseInt(dateStr.substring(6, 8));
+  
+  const date = new Date(year, month, day);
+  do {
+    date.setDate(date.getDate() - 1);
+  } while (date.getDay() === 0 || date.getDay() === 6);
+  
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}${m}${d}`;
+}
+
 // Load data from static file on server
 async function loadData() {
   try {
-    const res = await fetch('data/history.json?v=2.8');
+    const res = await fetch('data/history.json?v=2.9');
     if (res.ok) {
       rawHistoryData = await res.json();
       console.log(`[App] Successfully loaded ${rawHistoryData.length} days of historical data.`);
     } else {
       console.warn('[App] Could not load data/history.json. Falling back to mock.');
       rawHistoryData = generateMockHistory();
+    }
+    
+    // Pad rawHistoryData to at least 60 trading days so that KD and MACD indicators display fully and correctly!
+    if (rawHistoryData && rawHistoryData.length > 0 && rawHistoryData.length < 60) {
+      const needed = 60 - rawHistoryData.length;
+      let firstDate = rawHistoryData[0].date.replace(/-/g, '').replace(/\//g, '').trim();
+      const paddedItems = [];
+      
+      for (let i = 0; i < needed; i++) {
+        firstDate = getPreviousTradingDay(firstDate);
+        paddedItems.unshift({
+          date: firstDate,
+          updated_at: new Date().toISOString(),
+          tpex: {},
+          twse: {},
+          fund: {}
+        });
+      }
+      rawHistoryData = [...paddedItems, ...rawHistoryData];
     }
   } catch (err) {
     console.error('[App] Network error fetching history.json:', err);
@@ -525,12 +561,12 @@ async function initScreener() {
   const loadingEl = document.getElementById('screener-loading');
   loadingEl.style.display = 'flex';
   
-  datesList = rawHistoryData.map(item => item.date.replace(/-/g, '').replace(/\//g, '').trim()).slice(-30);
+  datesList = rawHistoryData.map(item => item.date.replace(/-/g, '').replace(/\//g, '').trim()).slice(-60);
   
   try {
     const promises = datesList.map(async date => {
       try {
-        const res = await fetch(`data/daily_stocks/${date}.json?v=2.8`);
+        const res = await fetch(`data/daily_stocks/${date}.json?v=2.9`);
         if (res.ok) {
           const data = await res.json();
           stockDailyDataSeries[date] = data;
