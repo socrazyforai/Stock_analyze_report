@@ -414,7 +414,7 @@ function formatDate(date) {
 // Load data from static file on server
 async function loadData() {
   try {
-    const res = await fetch('data/history.json?v=2.7');
+    const res = await fetch('data/history.json?v=2.8');
     if (res.ok) {
       rawHistoryData = await res.json();
       console.log(`[App] Successfully loaded ${rawHistoryData.length} days of historical data.`);
@@ -530,7 +530,7 @@ async function initScreener() {
   try {
     const promises = datesList.map(async date => {
       try {
-        const res = await fetch(`data/daily_stocks/${date}.json?v=2.7`);
+        const res = await fetch(`data/daily_stocks/${date}.json?v=2.8`);
         if (res.ok) {
           const data = await res.json();
           stockDailyDataSeries[date] = data;
@@ -817,11 +817,12 @@ let analysisVolumeChart = null;
 let analysisInstChart = null;
 let analysisMarginChart = null;
 let analysisKdChart = null;
+let analysisMacdChart = null;
 let localPriceChart = null;
 let klineSource = 'tv'; // 'tv' (TradingView) or 'local' (Chart.js)
 
 // Bind Subchart checkbox change listeners
-['chk-sub-volume', 'chk-sub-inst', 'chk-sub-margin', 'chk-sub-kd'].forEach(id => {
+['chk-sub-volume', 'chk-sub-inst', 'chk-sub-margin', 'chk-sub-kd', 'chk-sub-bb', 'chk-sub-macd'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('change', () => {
@@ -1383,6 +1384,60 @@ function drawAnalysisSubCharts() {
     kdContainer.style.display = 'none';
     if (analysisKdChart) { analysisKdChart.destroy(); analysisKdChart = null; }
   }
+
+  // 5. MACD Subchart
+  const showMACD = document.getElementById('chk-sub-macd').checked;
+  const macdContainer = document.getElementById('container-sub-macd');
+  if (showMACD) {
+    macdContainer.style.display = 'block';
+    const ctx = document.getElementById('analysis-sub-chart-macd').getContext('2d');
+    if (analysisMacdChart) analysisMacdChart.destroy();
+
+    const macdData = calculateMACD(history);
+    const oscColors = macdData.osc.map(v => v >= 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
+    const oscBorderColors = macdData.osc.map(v => v >= 0 ? '#ef4444' : '#22c55e');
+
+    analysisMacdChart = new Chart(ctx, {
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: '柱狀值',
+            data: macdData.osc,
+            backgroundColor: oscColors,
+            borderColor: oscBorderColors,
+            borderWidth: 1,
+            barPercentage: 0.65
+          },
+          {
+            type: 'line',
+            label: 'DIF線',
+            data: macdData.dif,
+            borderColor: '#f59e0b',
+            borderWidth: 1.2,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.15
+          },
+          {
+            type: 'line',
+            label: 'MACD線',
+            data: macdData.macd,
+            borderColor: '#3b82f6',
+            borderWidth: 1.2,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.15
+          }
+        ]
+      },
+      options: getSubchartOptions('MACD(12,26,9)', false, true)
+    });
+  } else {
+    macdContainer.style.display = 'none';
+    if (analysisMacdChart) { analysisMacdChart.destroy(); analysisMacdChart = null; }
+  }
 }
 
 // Helper to generate clean, consistent options for stacked subcharts
@@ -1469,6 +1524,102 @@ function calculateKD(history) {
   }
   
   return { k, d };
+}
+
+// Calculate MACD(12, 26, 9) indicator arrays
+function calculateMACD(history) {
+  const prices = history.map(h => h.data.close);
+  const dif = [];
+  const macd = [];
+  const osc = []; // Histogram
+  
+  const ema12 = calculateEMA(prices, 12);
+  const ema26 = calculateEMA(prices, 26);
+  
+  for (let i = 0; i < prices.length; i++) {
+    if (ema12[i] === null || ema26[i] === null) {
+      dif.push(null);
+    } else {
+      dif.push(parseFloat((ema12[i] - ema26[i]).toFixed(2)));
+    }
+  }
+  
+  // Calculate DEA (EMA 9 of DIF)
+  const dea = calculateEMAForSeries(dif, 9);
+  
+  for (let i = 0; i < prices.length; i++) {
+    if (dif[i] === null || dea[i] === null) {
+      macd.push(null);
+      osc.push(null);
+    } else {
+      macd.push(parseFloat(dea[i].toFixed(2)));
+      osc.push(parseFloat((dif[i] - dea[i]).toFixed(2)));
+    }
+  }
+  
+  return { dif, macd, osc };
+}
+
+// Helper to calculate EMA for a number array
+function calculateEMA(prices, period) {
+  const ema = [];
+  if (prices.length < period) {
+    return prices.map(() => null);
+  }
+  
+  let sum = 0;
+  for (let i = 0; i < period; i++) {
+    sum += prices[i];
+  }
+  let currentEma = sum / period;
+  
+  for (let i = 0; i < prices.length; i++) {
+    if (i < period - 1) {
+      ema.push(null);
+    } else if (i === period - 1) {
+      ema.push(currentEma);
+    } else {
+      const k = 2 / (period + 1);
+      currentEma = prices[i] * k + currentEma * (1 - k);
+      ema.push(currentEma);
+    }
+  }
+  return ema;
+}
+
+// Helper to calculate EMA for a series that contains nulls initially
+function calculateEMAForSeries(series, period) {
+  const ema = [];
+  let firstValidIndex = -1;
+  for (let i = 0; i < series.length; i++) {
+    if (series[i] !== null) {
+      firstValidIndex = i;
+      break;
+    }
+  }
+  
+  if (firstValidIndex === -1 || (series.length - firstValidIndex) < period) {
+    return series.map(() => null);
+  }
+  
+  for (let i = 0; i < series.length; i++) {
+    if (i < firstValidIndex + period - 1) {
+      ema.push(null);
+    } else if (i === firstValidIndex + period - 1) {
+      let sum = 0;
+      for (let j = firstValidIndex; j <= i; j++) {
+        sum += series[j];
+      }
+      let currentEma = sum / period;
+      ema.push(currentEma);
+    } else {
+      const k = 2 / (period + 1);
+      const prevEma = ema[i - 1];
+      const currentEma = series[i] * k + prevEma * (1 - k);
+      ema.push(currentEma);
+    }
+  }
+  return ema;
 }
 
 // Keep old Drawer function just in case
