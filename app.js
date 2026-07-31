@@ -858,7 +858,7 @@ let localPriceChart = null;
 let klineSource = 'tv'; // 'tv' (TradingView) or 'local' (Chart.js)
 
 // Bind Subchart checkbox change listeners
-['chk-sub-volume', 'chk-sub-inst', 'chk-sub-margin', 'chk-sub-kd', 'chk-sub-bb', 'chk-sub-macd'].forEach(id => {
+['chk-sub-volume', 'chk-sub-inst', 'chk-sub-margin', 'chk-sub-kd', 'chk-sub-bb', 'chk-sub-macd', 'chk-sub-deduct'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('change', () => {
@@ -907,7 +907,7 @@ if (btnSourceTv && btnSourceLocal) {
 }
 
 // Bind K-line indicator check change listeners
-['chk-tv-ma5', 'chk-tv-ma10', 'chk-tv-ma20', 'chk-tv-ma60', 'chk-tv-ma240', 'chk-sub-bb'].forEach(id => {
+['chk-tv-ma5', 'chk-tv-ma10', 'chk-tv-ma20', 'chk-tv-ma60', 'chk-tv-ma240', 'chk-sub-bb', 'chk-sub-deduct'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('change', () => {
@@ -1232,8 +1232,67 @@ function drawLocalPriceChart() {
     });
   }
   
+  const deductionPlugin = {
+    id: 'deductionLabels',
+    afterDraw: (chart) => {
+      const showDeduct = document.getElementById('chk-sub-deduct');
+      if (!showDeduct || !showDeduct.checked) return;
+      
+      const ctx = chart.ctx;
+      const history = currentAnalysisHistory;
+      const len = history.length;
+      if (len < 5) return;
+      
+      const drawLabel = (dayOffset, text, color) => {
+        const idx = len - 1 - dayOffset;
+        if (idx < 0) return;
+        
+        const meta = chart.getDatasetMeta(0);
+        const point = meta.data[idx];
+        if (!point) return;
+        
+        const x = point.x;
+        const y = point.y;
+        const val = history[idx].data.close.toFixed(2);
+        
+        ctx.save();
+        // Draw vertical dashed line down to the point
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(x, y - 25);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        
+        // Draw Text label
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        
+        // Draw background tag
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        const textWidth = ctx.measureText(`${text} ${val}`).width + 6;
+        ctx.fillRect(x - textWidth / 2, y - 36, textWidth, 12);
+        ctx.strokeStyle = color;
+        ctx.strokeRect(x - textWidth / 2, y - 36, textWidth, 12);
+        
+        ctx.fillStyle = color;
+        ctx.fillText(`${text} ${val}`, x, y - 27);
+        ctx.restore();
+      };
+      
+      // Draw 週扣 (5 days ago)
+      drawLabel(5, '週扣', '#f59e0b');
+      // Draw 月扣 (20 days ago)
+      drawLabel(20, '月扣', '#3b82f6');
+      // Draw 季扣 (60 days ago)
+      drawLabel(59, '季扣', '#10b981');
+    }
+  };
+
   localPriceChart = new Chart(ctx, {
     type: 'line',
+    plugins: [deductionPlugin],
     data: {
       labels: labels,
       datasets: datasets
