@@ -11,7 +11,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body class="dark-theme">
   <div class="app-container">
@@ -413,6 +413,103 @@
         </div>
       </div>
 
+      <!-- View 3: Stock Analysis View -->
+      <div id="stock-analysis-view" class="view-content">
+        <div class="analysis-header-bar">
+          <button class="btn btn-secondary" id="btn-back-to-screener">← 返回選股清單</button>
+          <div class="analysis-stock-info">
+            <h1 id="analysis-stock-title">8069 元太</h1>
+            <span class="badge badge-accent" id="analysis-stock-type">技術分析</span>
+          </div>
+        </div>
+
+        <div class="analysis-grid">
+          <!-- Left Main Chart Card -->
+          <div class="analysis-chart-card glass-card light-theme-card">
+            <div class="drawer-controls">
+              <div class="control-group">
+                <span class="control-label">均線：</span>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="analysis-chk-ma5" checked> MA5
+                </label>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="analysis-chk-ma10" checked> MA10
+                </label>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="analysis-chk-ma20" checked> MA20
+                </label>
+              </div>
+              <div class="control-group">
+                <span class="control-label">指標：</span>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="analysis-chk-bb" checked> 布林通道
+                </label>
+              </div>
+            </div>
+
+            <!-- Price & Volume Split Container -->
+            <div class="analysis-chart-wrapper">
+              <div class="analysis-chart-container price-chart-large">
+                <canvas id="analysis-price-chart"></canvas>
+              </div>
+              
+              <!-- Subchart Selection Tabs -->
+              <div class="subchart-tabs">
+                <button class="subchart-tab active" data-type="volume">成交量</button>
+                <button class="subchart-tab" data-type="inst">三大法人買賣超</button>
+                <button class="subchart-tab" data-type="margin">融資券變化</button>
+                <button class="subchart-tab" data-type="kd">KD 指標</button>
+              </div>
+              
+              <div class="analysis-chart-container sub-chart-large">
+                <canvas id="analysis-sub-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Summary Card -->
+          <div class="analysis-summary-card glass-card">
+            <div class="section-header">
+              <h2>📊 今日籌碼與行情摘要</h2>
+            </div>
+            <div class="metrics-list">
+              <div class="metric-row-large">
+                <span class="label">開盤價 / 收盤價</span>
+                <span class="val" id="analysis-open-close">0.00 / 0.00</span>
+              </div>
+              <div class="metric-row-large">
+                <span class="label">今日最高 / 最低</span>
+                <span class="val" id="analysis-high-low">0.00 / 0.00</span>
+              </div>
+              <div class="metric-row-large">
+                <span class="label">漲跌幅</span>
+                <span class="val" id="analysis-change-percent">0.00%</span>
+              </div>
+              <div class="metric-row-large">
+                <span class="label">成交量 (張)</span>
+                <span class="val" id="analysis-volume">0 張</span>
+              </div>
+              <div class="metric-row-large">
+                <span class="label">外資買賣超</span>
+                <span class="val" id="analysis-foreign-net">0 張</span>
+              </div>
+              <div class="metric-row-large">
+                <span class="label">投信買賣超</span>
+                <span class="val" id="analysis-sitc-net">0 張</span>
+              </div>
+              <div class="metric-row-large">
+                <span class="label">自營商買賣超</span>
+                <span class="val" id="analysis-dealers-net">0 張</span>
+              </div>
+              <div class="metric-row-large">
+                <span class="label">融資今日餘額 / 增減</span>
+                <span class="val" id="analysis-margin-bal">0 張 / 0 張</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
 
     <!-- Footer -->
@@ -422,6 +519,6 @@
   </div>
 
   <!-- Custom Logic Script -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>

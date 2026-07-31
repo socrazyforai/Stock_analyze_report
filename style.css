@@ -973,3 +973,167 @@ body {
   color: #22c55e !important;
   text-shadow: none !important;
 }
+
+/* ==========================================================================
+   Stock Analysis View Layout
+   ========================================================================== */
+#stock-analysis-view {
+  display: none;
+}
+
+#stock-analysis-view.active {
+  display: block;
+}
+
+.analysis-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 22, 42, 0.4);
+  border: 1px solid var(--border-color);
+  padding: 12px 20px;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(12px);
+}
+
+.analysis-stock-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.analysis-stock-info h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.light-theme-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Override header within light card */
+.light-theme-card .control-label {
+  color: #64748b !important;
+}
+
+.light-theme-card .checkbox-container {
+  color: #334155 !important;
+}
+
+.light-theme-card .drawer-controls {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.analysis-chart-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.analysis-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 12px;
+}
+
+.price-chart-large {
+  height: 360px !important;
+}
+
+.sub-chart-large {
+  height: 150px !important;
+}
+
+/* Subchart Tabs Bar */
+.subchart-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 4px;
+  margin: 8px 0;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.subchart-tab {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.subchart-tab:hover {
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.subchart-tab.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Right Summary Card and Metrics */
+.analysis-summary-card {
+  padding: 1.5rem;
+}
+
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.metric-row-large {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.metric-row-large:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.metric-row-large .label {
+  color: var(--text-muted);
+}
+
+.metric-row-large .val {
+  font-weight: 700;
+  color: var(--text-main);
+}

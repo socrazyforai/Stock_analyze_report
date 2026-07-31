@@ -811,10 +811,56 @@ function updateDatasetVisibility() {
   }
 });
 
-// Draw professional K-line (Candlestick) & Volume split charts
-function openStockDrawer(code) {
-  const drawer = document.getElementById('stock-detail-drawer');
-  drawer.classList.add('open');
+// Global visibility toggle helper for dedicated Stock Analysis View
+function updateAnalysisDatasetVisibility() {
+  if (!analysisPriceChart) return;
+  
+  const showMA5 = document.getElementById('analysis-chk-ma5').checked;
+  const showMA10 = document.getElementById('analysis-chk-ma10').checked;
+  const showMA20 = document.getElementById('analysis-chk-ma20').checked;
+  const showBB = document.getElementById('analysis-chk-bb').checked;
+  
+  analysisPriceChart.data.datasets.forEach(ds => {
+    if (ds.label === 'MA5') ds.hidden = !showMA5;
+    if (ds.label === 'MA10') ds.hidden = !showMA10;
+    if (ds.label === 'MA20') ds.hidden = !showMA20;
+    if (ds.label.includes('BB')) ds.hidden = !showBB;
+  });
+  analysisPriceChart.update();
+}
+
+// Bind indicators checkboxes change listeners for analysis view
+['analysis-chk-ma5', 'analysis-chk-ma10', 'analysis-chk-ma20', 'analysis-chk-bb'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', updateAnalysisDatasetVisibility);
+  }
+});
+
+// Bind Subchart Tab selection listeners
+let currentAnalysisHistory = [];
+let analysisSelectedSubchartType = 'volume';
+
+document.querySelectorAll('.subchart-tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    document.querySelectorAll('.subchart-tab').forEach(t => t.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    analysisSelectedSubchartType = e.currentTarget.getAttribute('data-type');
+    drawAnalysisSubChart();
+  });
+});
+
+// Back Button Navigation
+document.getElementById('btn-back-to-screener').addEventListener('click', () => {
+  document.getElementById('stock-analysis-view').classList.remove('active');
+  document.getElementById('screener-view').classList.add('active');
+});
+
+// Open dedicated full-screen Stock Analysis View
+function openStockAnalysis(code) {
+  // Toggle views
+  document.getElementById('screener-view').classList.remove('active');
+  document.getElementById('stock-analysis-view').classList.add('active');
   
   const history = [];
   datesList.forEach(d => {
@@ -826,16 +872,62 @@ function openStockDrawer(code) {
 
   if (history.length === 0) return;
   
+  currentAnalysisHistory = history;
   const latest = history[history.length - 1].data;
-  document.getElementById('drawer-stock-title').innerText = `${latest.symbol} ${latest.name}`;
-  document.getElementById('detail-high-low').innerText = `${latest.high.toFixed(2)} / ${latest.low.toFixed(2)}`;
   
-  const instSum = latest.foreign_net + latest.sitc_net + latest.dealers_net;
-  const instSign = instSum >= 0 ? '+' : '';
-  document.getElementById('detail-inst-net').innerText = `${instSign}${instSum.toLocaleString()} 張`;
-  document.getElementById('detail-inst-net').className = 'val ' + (instSum >= 0 ? 'up-text' : 'down-text');
+  // Set Stock Title
+  document.getElementById('analysis-stock-title').innerText = `${latest.symbol} ${latest.name}`;
   
-  document.getElementById('detail-margin-bal').innerText = `${latest.margin_today.toLocaleString()} 張`;
+  // Set Metrics Panel
+  const pctChange = latest.open > 0 ? ((latest.close - latest.open) / latest.open * 100) : 0;
+  const changeSign = latest.change >= 0 ? '+' : '';
+  const changeColor = latest.change >= 0 ? 'up-text' : 'down-text';
+  
+  document.getElementById('analysis-open-close').innerText = `${latest.open.toFixed(2)} / ${latest.close.toFixed(2)}`;
+  document.getElementById('analysis-high-low').innerText = `${latest.high.toFixed(2)} / ${latest.low.toFixed(2)}`;
+  
+  const pctEl = document.getElementById('analysis-change-percent');
+  pctEl.innerText = `${changeSign}${pctChange.toFixed(2)}% (${changeSign}${latest.change.toFixed(2)})`;
+  pctEl.className = 'val ' + changeColor;
+  
+  document.getElementById('analysis-volume').innerText = latest.volume.toLocaleString();
+  
+  const formatInstVal = (val) => {
+    const sign = val >= 0 ? '+' : '';
+    return `${sign}${val.toLocaleString()}`;
+  };
+  
+  const fEl = document.getElementById('analysis-foreign-net');
+  fEl.innerText = formatInstVal(latest.foreign_net);
+  fEl.className = 'val ' + (latest.foreign_net >= 0 ? 'up-text' : 'down-text');
+  
+  const sEl = document.getElementById('analysis-sitc-net');
+  sEl.innerText = formatInstVal(latest.sitc_net);
+  sEl.className = 'val ' + (latest.sitc_net >= 0 ? 'up-text' : 'down-text');
+  
+  const dEl = document.getElementById('analysis-dealers-net');
+  dEl.innerText = formatInstVal(latest.dealers_net);
+  dEl.className = 'val ' + (latest.dealers_net >= 0 ? 'up-text' : 'down-text');
+  
+  const marginSign = latest.margin_change >= 0 ? '+' : '';
+  document.getElementById('analysis-margin-bal').innerText = `${latest.margin_today.toLocaleString()} / ${marginSign}${latest.margin_change.toLocaleString()}`;
+  document.getElementById('analysis-margin-bal').className = 'val ' + (latest.margin_change >= 0 ? 'up-text' : 'down-text');
+
+  // Draw Charts
+  drawAnalysisPriceChart();
+  drawAnalysisSubChart();
+}
+
+// Draw K-Line Price Chart in full screen view
+let analysisPriceChart = null;
+
+function drawAnalysisPriceChart() {
+  const history = currentAnalysisHistory;
+  const priceCtx = document.getElementById('analysis-price-chart').getContext('2d');
+  
+  if (analysisPriceChart) {
+    analysisPriceChart.destroy();
+  }
 
   // --- Calculate MA & BB Series ---
   const prices = history.map(h => h.data.close);
@@ -847,19 +939,16 @@ function openStockDrawer(code) {
   const bbMiddle = [];
 
   for (let i = 0; i < prices.length; i++) {
-    // MA5
     if (i >= 4) {
       let sum = 0; for (let j = i - 4; j <= i; j++) sum += prices[j];
       ma5.push(sum / 5);
     } else { ma5.push(null); }
 
-    // MA10
     if (i >= 9) {
       let sum = 0; for (let j = i - 9; j <= i; j++) sum += prices[j];
       ma10.push(sum / 10);
     } else { ma10.push(null); }
 
-    // MA20 & BB(20)
     if (i >= 19) {
       let sum = 0; for (let j = i - 19; j <= i; j++) sum += prices[j];
       const mean = sum / 20;
@@ -883,15 +972,9 @@ function openStockDrawer(code) {
   const minPrice = Math.min(...allPrices);
   const maxPrice = Math.max(...allPrices);
   const priceRange = maxPrice - minPrice;
-  const pricePadding = priceRange * 0.1 || 5; // 10% padding, min 5
+  const pricePadding = priceRange * 0.1 || 5;
   const yMin = Math.max(0, minPrice - pricePadding);
   const yMax = maxPrice + pricePadding;
-
-  // --- Draw Candlestick Price Chart ---
-  const priceCtx = document.getElementById('stock-detail-chart').getContext('2d');
-  if (stockDetailChart) {
-    stockDetailChart.destroy();
-  }
 
   const labels = history.map(h => formatDateString(h.date).substring(5));
   const klineData = history.map(h => ({
@@ -903,7 +986,7 @@ function openStockDrawer(code) {
 
   const candleColors = history.map(h => h.data.close >= h.data.open ? '#ef4444' : '#22c55e');
 
-  stockDetailChart = new Chart(priceCtx, {
+  analysisPriceChart = new Chart(priceCtx, {
     type: 'bar',
     data: {
       labels: labels,
@@ -1010,46 +1093,114 @@ function openStockDrawer(code) {
     }
   });
 
-  // Apply checkbox toggles visibility immediately
-  updateDatasetVisibility();
+  updateAnalysisDatasetVisibility();
+}
 
-  // --- Draw Volume Chart ---
-  const volCtx = document.getElementById('stock-volume-chart').getContext('2d');
-  if (stockVolumeChart) {
-    stockVolumeChart.destroy();
+// Draw flexible Subcharts based on user indicator tabs selection
+let analysisSubChart = null;
+
+function drawAnalysisSubChart() {
+  const history = currentAnalysisHistory;
+  const volCtx = document.getElementById('analysis-sub-chart').getContext('2d');
+  
+  if (analysisSubChart) {
+    analysisSubChart.destroy();
   }
 
-  const volumes = history.map(h => h.data.volume);
-  const volColors = history.map(h => h.data.close >= h.data.open ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
-  const volBorderColors = history.map(h => h.data.close >= h.data.open ? '#ef4444' : '#22c55e');
+  const labels = history.map(h => formatDateString(h.date).substring(5));
+  let datasets = [];
 
-  stockVolumeChart = new Chart(volCtx, {
-    type: 'bar',
+  if (analysisSelectedSubchartType === 'volume') {
+    const volumes = history.map(h => h.data.volume);
+    const volColors = history.map(h => h.data.close >= h.data.open ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
+    const volBorderColors = history.map(h => h.data.close >= h.data.open ? '#ef4444' : '#22c55e');
+
+    datasets.push({
+      type: 'bar',
+      label: '成交量',
+      data: volumes,
+      backgroundColor: volColors,
+      borderColor: volBorderColors,
+      borderWidth: 1,
+      barPercentage: 0.65
+    });
+  } 
+  else if (analysisSelectedSubchartType === 'inst') {
+    const instNet = history.map(h => h.data.foreign_net + h.data.sitc_net + h.data.dealers_net);
+    const instColors = instNet.map(v => v >= 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
+    const instBorderColors = instNet.map(v => v >= 0 ? '#ef4444' : '#22c55e');
+
+    datasets.push({
+      type: 'bar',
+      label: '法人買賣超',
+      data: instNet,
+      backgroundColor: instColors,
+      borderColor: instBorderColors,
+      borderWidth: 1,
+      barPercentage: 0.65
+    });
+  } 
+  else if (analysisSelectedSubchartType === 'margin') {
+    const marginNet = history.map(h => h.data.margin_change);
+    const marginColors = marginNet.map(v => v >= 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
+    const marginBorderColors = marginNet.map(v => v >= 0 ? '#ef4444' : '#22c55e');
+
+    datasets.push({
+      type: 'bar',
+      label: '融資增減',
+      data: marginNet,
+      backgroundColor: marginColors,
+      borderColor: marginBorderColors,
+      borderWidth: 1,
+      barPercentage: 0.65
+    });
+  } 
+  else if (analysisSelectedSubchartType === 'kd') {
+    const kd = calculateKD(history);
+    
+    datasets.push({
+      type: 'line',
+      label: 'K值',
+      data: kd.k,
+      borderColor: '#f59e0b',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.2
+    });
+    datasets.push({
+      type: 'line',
+      label: 'D值',
+      data: kd.d,
+      borderColor: '#3b82f6',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.2
+    });
+  }
+
+  analysisSubChart = new Chart(volCtx, {
     data: {
       labels: labels,
-      datasets: [
-        {
-          label: '成交量',
-          data: volumes,
-          backgroundColor: volColors,
-          borderColor: volBorderColors,
-          borderWidth: 1,
-          barPercentage: 0.65
-        }
-      ]
+      datasets: datasets
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: { display: analysisSelectedSubchartType === 'kd' },
         tooltip: {
           backgroundColor: '#0f172a',
           titleColor: '#fff',
           bodyColor: '#fff',
           callbacks: {
             label: function(context) {
-              return `成交量: ${context.parsed.y.toLocaleString()} 張`;
+              const val = context.parsed.y;
+              if (analysisSelectedSubchartType === 'volume' || analysisSelectedSubchartType === 'inst' || analysisSelectedSubchartType === 'margin') {
+                return `${context.dataset.label}: ${val.toLocaleString()} 張`;
+              }
+              return `${context.dataset.label}: ${val.toFixed(2)}`;
             }
           }
         }
@@ -1066,7 +1217,8 @@ function openStockDrawer(code) {
             color: '#64748b',
             font: { size: 8 },
             callback: function(value) {
-              if (value >= 1000) return (value / 1000) + 'K';
+              if (analysisSelectedSubchartType === 'kd') return value;
+              if (Math.abs(value) >= 1000) return (value / 1000) + 'K';
               return value;
             }
           }
@@ -1074,6 +1226,45 @@ function openStockDrawer(code) {
       }
     }
   });
+}
+
+// Calculate KD(9, 3, 3) indicator arrays
+function calculateKD(history) {
+  const k = [];
+  const d = [];
+  
+  let currentK = 50;
+  let currentD = 50;
+  
+  for (let i = 0; i < history.length; i++) {
+    if (i < 8) {
+      k.push(null);
+      d.push(null);
+    } else {
+      let highestHigh = -Infinity;
+      let lowestLow = Infinity;
+      for (let j = i - 8; j <= i; j++) {
+        if (history[j].data.high > highestHigh) highestHigh = history[j].data.high;
+        if (history[j].data.low < lowestLow) lowestLow = history[j].data.low;
+      }
+      
+      const close = history[i].data.close;
+      const rsv = highestHigh === lowestLow ? 50 : ((close - lowestLow) / (highestHigh - lowestLow)) * 100;
+      
+      currentK = (2 / 3) * currentK + (1 / 3) * rsv;
+      currentD = (2 / 3) * currentD + (1 / 3) * currentK;
+      
+      k.push(parseFloat(currentK.toFixed(2)));
+      d.push(parseFloat(currentD.toFixed(2)));
+    }
+  }
+  
+  return { k, d };
+}
+
+// Keep old Drawer function just in case
+function openStockDrawer(code) {
+  openStockAnalysis(code); // Redirect to the upgraded fullscreen analytical view!
 }
 
 // Drawer close buttons
