@@ -808,19 +808,19 @@ body {
   padding: 40px;
 }
 
-/* Stock Detail Drawer */
+/* Stock Detail Drawer - Professional Light Theme */
 .stock-drawer {
   position: fixed;
   top: 0;
   right: -450px;
-  width: 420px;
+  width: 440px;
   height: 100vh;
-  background: rgba(7, 9, 19, 0.95);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  background: #ffffff !important;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(12px);
+  color: #0f172a !important;
 }
 
 .stock-drawer.open {
@@ -834,40 +834,43 @@ body {
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
+  background: #ffffff !important;
 }
 
 .drawer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #f1f5f9;
   padding-bottom: 12px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .drawer-header h2 {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: #fff;
+  color: #0f172a !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
 }
 
 .btn-close {
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: #64748b;
   font-size: 1.2rem;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .btn-close:hover {
-  color: var(--neon-red);
+  color: #ef4444;
 }
 
 .drawer-body {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.2rem;
   overflow-y: auto;
   flex-grow: 1;
 }
@@ -876,9 +879,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px 14px;
   border-radius: 8px;
   font-size: 0.8rem;
 }
@@ -891,7 +894,7 @@ body {
 }
 
 .control-label {
-  color: var(--text-muted);
+  color: #64748b;
   font-weight: 600;
 }
 
@@ -901,22 +904,22 @@ body {
   gap: 6px;
   cursor: pointer;
   user-select: none;
-  color: var(--text-main);
-  font-weight: 500;
+  color: #334155;
+  font-weight: 600;
 }
 
 .checkbox-container input {
   cursor: pointer;
-  accent-color: var(--neon-blue);
+  accent-color: #2563eb;
 }
 
 .detail-chart-wrapper {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.01);
+  background: #ffffff;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid #e2e8f0;
   padding: 8px;
 }
 
@@ -940,8 +943,8 @@ body {
 }
 
 .metric-box {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   padding: 12px;
   border-radius: 8px;
   display: flex;
@@ -950,11 +953,23 @@ body {
 }
 
 .metric-box .label {
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: 0.8rem;
+  color: #64748b;
 }
 
 .metric-box .val {
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Scoped Red/Green Text inside White Drawer for maximum readability */
+.stock-drawer .up-text {
+  color: #ef4444 !important;
+  text-shadow: none !important;
+}
+
+.stock-drawer .down-text {
+  color: #22c55e !important;
+  text-shadow: none !important;
 }

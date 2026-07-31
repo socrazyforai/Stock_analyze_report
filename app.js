@@ -878,6 +878,15 @@ function openStockDrawer(code) {
     }
   }
 
+  // --- Calculate min/max price for auto-scaling y-axis ---
+  const allPrices = history.flatMap(h => [h.data.open, h.data.close, h.data.high, h.data.low]);
+  const minPrice = Math.min(...allPrices);
+  const maxPrice = Math.max(...allPrices);
+  const priceRange = maxPrice - minPrice;
+  const pricePadding = priceRange * 0.1 || 5; // 10% padding, min 5
+  const yMin = Math.max(0, minPrice - pricePadding);
+  const yMax = maxPrice + pricePadding;
+
   // --- Draw Candlestick Price Chart ---
   const priceCtx = document.getElementById('stock-detail-chart').getContext('2d');
   if (stockDetailChart) {
@@ -892,7 +901,7 @@ function openStockDrawer(code) {
     l: h.data.low
   }));
 
-  const candleColors = history.map(h => h.data.close >= h.data.open ? '#ff3860' : '#00f2fe');
+  const candleColors = history.map(h => h.data.close >= h.data.open ? '#ef4444' : '#22c55e');
 
   stockDetailChart = new Chart(priceCtx, {
     type: 'bar',
@@ -911,7 +920,7 @@ function openStockDrawer(code) {
           type: 'line',
           label: 'MA5',
           data: ma5,
-          borderColor: '#eab308',
+          borderColor: '#f59e0b',
           borderWidth: 1.5,
           pointRadius: 0,
           fill: false
@@ -938,7 +947,7 @@ function openStockDrawer(code) {
           type: 'line',
           label: 'BB Upper',
           data: bbUpper,
-          borderColor: 'rgba(255, 255, 255, 0.12)',
+          borderColor: 'rgba(15, 23, 42, 0.12)',
           borderWidth: 1,
           borderDash: [3, 3],
           pointRadius: 0,
@@ -948,7 +957,7 @@ function openStockDrawer(code) {
           type: 'line',
           label: 'BB Lower',
           data: bbLower,
-          borderColor: 'rgba(255, 255, 255, 0.12)',
+          borderColor: 'rgba(15, 23, 42, 0.12)',
           borderWidth: 1,
           borderDash: [3, 3],
           pointRadius: 0,
@@ -963,10 +972,10 @@ function openStockDrawer(code) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15, 22, 42, 0.95)',
+          backgroundColor: '#0f172a',
           titleColor: '#fff',
           bodyColor: '#fff',
-          borderColor: '#818cf8',
+          borderColor: '#64748b',
           borderWidth: 1,
           padding: 8,
           callbacks: {
@@ -987,13 +996,15 @@ function openStockDrawer(code) {
       },
       scales: {
         x: {
-          display: false, // hide x axis for the price chart
+          display: false,
           grid: { display: false }
         },
         y: {
           position: 'left',
-          grid: { color: 'rgba(255, 255, 255, 0.02)' },
-          ticks: { color: '#9ca3af', font: { size: 9 } }
+          grid: { color: 'rgba(15, 23, 42, 0.04)' },
+          ticks: { color: '#64748b', font: { size: 9 } },
+          min: Math.floor(yMin),
+          max: Math.ceil(yMax)
         }
       }
     }
@@ -1009,8 +1020,8 @@ function openStockDrawer(code) {
   }
 
   const volumes = history.map(h => h.data.volume);
-  const volColors = history.map(h => h.data.close >= h.data.open ? 'rgba(255, 56, 96, 0.5)' : 'rgba(0, 242, 254, 0.5)');
-  const volBorderColors = history.map(h => h.data.close >= h.data.open ? '#ff3860' : '#00f2fe');
+  const volColors = history.map(h => h.data.close >= h.data.open ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
+  const volBorderColors = history.map(h => h.data.close >= h.data.open ? '#ef4444' : '#22c55e');
 
   stockVolumeChart = new Chart(volCtx, {
     type: 'bar',
@@ -1033,7 +1044,7 @@ function openStockDrawer(code) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15, 22, 42, 0.95)',
+          backgroundColor: '#0f172a',
           titleColor: '#fff',
           bodyColor: '#fff',
           callbacks: {
@@ -1046,13 +1057,13 @@ function openStockDrawer(code) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#6b7280', font: { size: 9 } }
+          ticks: { color: '#64748b', font: { size: 9 } }
         },
         y: {
           position: 'left',
-          grid: { color: 'rgba(255, 255, 255, 0.02)' },
+          grid: { color: 'rgba(15, 23, 42, 0.04)' },
           ticks: {
-            color: '#9ca3af',
+            color: '#64748b',
             font: { size: 8 },
             callback: function(value) {
               if (value >= 1000) return (value / 1000) + 'K';
