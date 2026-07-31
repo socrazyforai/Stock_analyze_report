@@ -428,27 +428,107 @@
         <div class="analysis-grid">
           <!-- Left Main Chart Card -->
           <div class="analysis-chart-card glass-card light-theme-card">
+            <!-- aistockmap Style Professional Technical Analysis Controls -->
+            <div class="aistockmap-controls">
+              <!-- Row 1: Time Scales -->
+              <div class="control-row">
+                <span class="row-label">時間尺度：</span>
+                <div class="btn-group-scales">
+                  <button class="btn-scale active" data-interval="D">日</button>
+                  <button class="btn-scale" data-interval="W">週</button>
+                  <button class="btn-scale" data-interval="M">月</button>
+                  <span class="scale-divider">|</span>
+                  <button class="btn-scale" data-range="1M">1M</button>
+                  <button class="btn-scale" data-range="3M">3M</button>
+                  <button class="btn-scale" data-range="6M">6M</button>
+                  <button class="btn-scale" data-range="YTD">YTD</button>
+                  <button class="btn-scale active" data-range="1Y">1Y</button>
+                  <button class="btn-scale" data-range="5Y">5Y</button>
+                </div>
+              </div>
+
+              <!-- Row 2: Moving Averages -->
+              <div class="control-row">
+                <span class="row-label">均線：</span>
+                <div class="checkbox-row">
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-tv-ma5" checked> <span class="dot-color" style="background:#f59e0b;"></span> MA5
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-tv-ma10" checked> <span class="dot-color" style="background:#a855f7;"></span> MA10
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-tv-ma20" checked> <span class="dot-color" style="background:#3b82f6;"></span> MA20
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-tv-ma60"> <span class="dot-color" style="background:#10b981;"></span> MA60
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-tv-ma240"> <span class="dot-color" style="background:#ef4444;"></span> MA240
+                  </label>
+                </div>
+              </div>
+
+              <!-- Row 3: Sub-charts Toggles -->
+              <div class="control-row">
+                <span class="row-label">副圖：</span>
+                <div class="checkbox-row">
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-sub-volume" checked> 成交量
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-sub-inst" checked> 三大法人
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-sub-margin" checked> 融資券變化
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-sub-kd"> KD指標(9)
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-sub-bb" checked> BB(20)
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-sub-macd"> MACD
+                  </label>
+                </div>
+              </div>
+
+              <!-- Row 4: Drawing Tools -->
+              <div class="control-row">
+                <span class="row-label">畫線：</span>
+                <div class="drawing-tools">
+                  <button class="btn-draw" id="btn-draw-trend"><span class="icon">↗</span> 趨勢線</button>
+                  <button class="btn-draw" id="btn-draw-horiz"><span class="icon">─</span> 水平線</button>
+                  <button class="btn-draw btn-draw-delete" id="btn-draw-clear"><span class="icon">✕</span> 刪除</button>
+                  
+                  <div class="color-palette">
+                    <span class="color-dot active" style="background:#ef4444;" data-color="red"></span>
+                    <span class="color-dot" style="background:#f59e0b;" data-color="orange"></span>
+                    <span class="color-dot" style="background:#10b981;" data-color="green"></span>
+                    <span class="color-dot" style="background:#3b82f6;" data-color="blue"></span>
+                    <span class="color-dot" style="background:#8b5cf6;" data-color="purple"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 5: Event Indicators -->
+              <div class="control-row">
+                <span class="row-label">重大資訊：</span>
+                <div class="event-markers">
+                  <button class="btn-event" data-type="clarify">澄清回應</button>
+                  <button class="btn-event" data-type="self">自結</button>
+                  <button class="btn-event" data-type="finance">財務數據</button>
+                  <button class="btn-event" data-type="governance">公司治理</button>
+                  <button class="btn-event" data-type="major">重大事件</button>
+                </div>
+              </div>
+            </div>
+
             <!-- Price & Volume Split Container -->
             <div class="analysis-chart-wrapper">
               <div class="analysis-chart-container price-chart-large">
                 <div id="analysis-price-chart" style="width: 100%; height: 100%;"></div>
-              </div>
-              
-              <!-- Subchart Selection Controls -->
-              <div class="subchart-controls-panel">
-                <span class="control-label">副圖指標：</span>
-                <label class="checkbox-container">
-                  <input type="checkbox" id="subchart-chk-volume" checked> 成交量
-                </label>
-                <label class="checkbox-container">
-                  <input type="checkbox" id="subchart-chk-inst" checked> 三大法人買賣超
-                </label>
-                <label class="checkbox-container">
-                  <input type="checkbox" id="subchart-chk-margin" checked> 融資券變化
-                </label>
-                <label class="checkbox-container">
-                  <input type="checkbox" id="subchart-chk-kd"> KD 指標
-                </label>
               </div>
               
               <!-- Stacking Subcharts -->

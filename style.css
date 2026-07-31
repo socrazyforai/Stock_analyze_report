@@ -1133,3 +1133,179 @@ body {
   font-weight: 700;
   color: var(--text-main);
 }
+
+/* ==========================================================================
+   aistockmap Control Panel Styles
+   ========================================================================== */
+.aistockmap-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 8px;
+}
+
+.control-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.row-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  width: 90px;
+  min-width: 90px;
+}
+
+/* Time scales buttons */
+.btn-group-scales {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-scale {
+  background: transparent;
+  border: none;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-scale:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.btn-scale.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.scale-divider {
+  color: #cbd5e1;
+  margin: 0 4px;
+  font-size: 0.8rem;
+}
+
+/* Checkboxes Row */
+.checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.checkbox-container .dot-color {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* Drawing tools */
+.drawing-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-draw {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.btn-draw:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.btn-draw-delete:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #ef4444;
+}
+
+.color-palette {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-dot.active {
+  border-color: #0f172a !important;
+  box-shadow: 0 0 0 2px #e2e8f0;
+}
+
+/* Event marker buttons */
+.event-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-event {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-event:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.btn-event.active {
+  background: #334155 !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+}

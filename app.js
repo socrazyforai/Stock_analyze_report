@@ -819,13 +819,60 @@ let analysisMarginChart = null;
 let analysisKdChart = null;
 
 // Bind Subchart checkbox change listeners
-['subchart-chk-volume', 'subchart-chk-inst', 'subchart-chk-margin', 'subchart-chk-kd'].forEach(id => {
+['chk-sub-volume', 'chk-sub-inst', 'chk-sub-margin', 'chk-sub-kd'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('change', () => {
       drawAnalysisSubCharts();
     });
   }
+});
+
+// Bind Time Scales click handlers
+document.querySelectorAll('.btn-scale').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.btn-scale').forEach(b => b.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    
+    const interval = e.currentTarget.getAttribute('data-interval') || 'D';
+    const range = e.currentTarget.getAttribute('data-range') || '1Y';
+    
+    // Reload TradingView chart with the clicked interval/range!
+    drawAnalysisPriceChart(interval, range);
+  });
+});
+
+// Bind Drawing tools helper popups
+['btn-draw-trend', 'btn-draw-horiz'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('click', () => {
+      alert('💡 畫線提示：請直接在 TradingView 看盤畫面左側工具列點選「趨勢線」或「水平線」工具，即可在圖表上自由繪圖、調整粗細及顏色！');
+    });
+  }
+});
+
+const elClear = document.getElementById('btn-draw-clear');
+if (elClear) {
+  elClear.addEventListener('click', () => {
+    alert('💡 提示：若要刪除繪圖線條，請點選線條後按鍵盤 Delete 鍵，或點擊 TradingView 左下角垃圾桶圖示即可清空！');
+  });
+}
+
+// Bind color palette selectors
+document.querySelectorAll('.color-dot').forEach(dot => {
+  dot.addEventListener('click', (e) => {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    alert(`🎨 畫筆顏色已選取！請在 TradingView 左側工具列選取畫筆，開始以該顏色繪製線條。`);
+  });
+});
+
+// Bind News Event markers toggle
+document.querySelectorAll('.btn-event').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.currentTarget.classList.toggle('active');
+  });
 });
 
 // Back Button Navigation for analysis view
@@ -900,16 +947,16 @@ function openStockAnalysis(code) {
 }
 
 // Draw K-Line Price Chart in full screen view using official TradingView Widget
-function drawAnalysisPriceChart() {
+function drawAnalysisPriceChart(interval = 'D', range = '1Y') {
   const latest = currentAnalysisHistory[currentAnalysisHistory.length - 1].data;
   const code = latest.symbol;
   const marketType = (latest.market === 'TWO' || latest.market === 'TPEX') ? 'TPEX' : 'TWSE';
   
   if (typeof TradingView !== 'undefined') {
-    new TradingView.widget({
+    const config = {
       "autosize": true,
       "symbol": `${marketType}:${code}`,
-      "interval": "D",
+      "interval": interval,
       "timezone": "Asia/Taipei",
       "theme": "light",
       "style": "1",
@@ -924,7 +971,11 @@ function drawAnalysisPriceChart() {
         "MASimple@tv-basicstudies",
         "BB@tv-basicstudies"
       ]
-    });
+    };
+    if (range) {
+      config["range"] = range;
+    }
+    new TradingView.widget(config);
   } else {
     document.getElementById('analysis-price-chart').innerHTML = 
       `<div class="loading-overlay" style="background:transparent; color:#64748b; display:flex; align-items:center; justify-content:center; height:100%;"><p>正在載入 TradingView 雲端 K 線圖...</p></div>`;
@@ -938,7 +989,7 @@ function drawAnalysisSubCharts() {
   const labels = history.map(h => formatDateString(h.date).substring(5));
 
   // 1. Volume Subchart
-  const showVol = document.getElementById('subchart-chk-volume').checked;
+  const showVol = document.getElementById('chk-sub-volume').checked;
   const volContainer = document.getElementById('container-sub-volume');
   if (showVol) {
     volContainer.style.display = 'block';
@@ -970,7 +1021,7 @@ function drawAnalysisSubCharts() {
   }
 
   // 2. Institutions Subchart
-  const showInst = document.getElementById('subchart-chk-inst').checked;
+  const showInst = document.getElementById('chk-sub-inst').checked;
   const instContainer = document.getElementById('container-sub-inst');
   if (showInst) {
     instContainer.style.display = 'block';
@@ -1002,7 +1053,7 @@ function drawAnalysisSubCharts() {
   }
 
   // 3. Margin Subchart
-  const showMargin = document.getElementById('subchart-chk-margin').checked;
+  const showMargin = document.getElementById('chk-sub-margin').checked;
   const marginContainer = document.getElementById('container-sub-margin');
   if (showMargin) {
     marginContainer.style.display = 'block';
@@ -1034,7 +1085,7 @@ function drawAnalysisSubCharts() {
   }
 
   // 4. KD Subchart
-  const showKD = document.getElementById('subchart-chk-kd').checked;
+  const showKD = document.getElementById('chk-sub-kd').checked;
   const kdContainer = document.getElementById('container-sub-kd');
   if (showKD) {
     kdContainer.style.display = 'block';
