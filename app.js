@@ -1,6 +1,7 @@
 // Global chart instances reference
 let marginChart = null;
 let stockDetailChart = null;
+let stockVolumeChart = null;
 let rawHistoryData = [];
 
 // Screener Data Series
@@ -315,7 +316,7 @@ function generateMockHistory() {
   let tpexBaseUnits = 1800000;
   let tpexBaseShort = 30000;
   
-  for (let i = 25; i >= 0; i--) {
+  for (let i = 35; i >= 0; i--) {
     const d = new Date(baseDate);
     d.setDate(d.getDate() - i);
     if (d.getDay() === 0 || d.getDay() === 6) continue;
@@ -517,14 +518,14 @@ function generateMockStocksForDate(date) {
   return daily;
 }
 
-// Load daily stocks JSON files for the last 20 days in parallel
+// Load daily stocks JSON files for the last 30 days in parallel (to calculate MA20 & BB)
 async function initScreener() {
   if (isScreenerInitialized) return;
   
   const loadingEl = document.getElementById('screener-loading');
   loadingEl.style.display = 'flex';
   
-  datesList = rawHistoryData.map(item => item.date.replace(/-/g, '').replace(/\//g, '').trim()).slice(-20);
+  datesList = rawHistoryData.map(item => item.date.replace(/-/g, '').replace(/\//g, '').trim()).slice(-30);
   
   try {
     const promises = datesList.map(async date => {
@@ -575,7 +576,7 @@ function runStrategy(strategyId) {
   const matchingStocks = [];
 
   allCodes.forEach(code => {
-    // Reconstruct 20-day time-series history for this stock
+    // Reconstruct history series for this stock
     const history = [];
     datesList.forEach(d => {
       const dayData = stockDailyDataSeries[d];
@@ -641,24 +642,23 @@ function renderScreenerTable(stocksList, totalAnalyzed) {
 
 // 6 Core Quantitative Screening Formulas
 function checkStrategy(strategyId, history) {
-  const today = history[history.length - 1];
-  const n = history.length;
+  // Slice to last 21 days to ensure a constant window size (20 days consolidation + today)
+  const targetHistory = history.slice(-21);
+  const today = targetHistory[targetHistory.length - 1];
+  const n = targetHistory.length;
   
   if (strategyId === 'strategy1') {
     // 1. 光頭大紅K 盤整突破
-    // Range of close prices over first n-1 days < 8% (consolidation)
-    const prevDays = history.slice(0, n - 1);
+    const prevDays = targetHistory.slice(0, n - 1);
     const closes = prevDays.map(h => h.close);
     const maxClose = Math.max(...closes);
     const minClose = Math.min(...closes);
     const avgClose = closes.reduce((a, b) => a + b, 0) / closes.length;
     const isConsolidating = (maxClose - minClose) / (avgClose || 1) < 0.08;
     
-    // Today's breakout and close high
     const isBigRed = today.close > today.open && (today.close - today.open) / today.open >= 0.045;
     const isHairless = (today.high - today.close) / (today.close - today.open || 1) < 0.12;
     
-    // Volume surge
     const avgVol = prevDays.reduce((a, b) => a + b.volume, 0) / prevDays.length;
     const isVolumeSurge = today.volume > avgVol * 1.8;
 
@@ -668,8 +668,8 @@ function checkStrategy(strategyId, history) {
   if (strategyId === 'strategy2') {
     // 2. 夾 雙線發動 (布林突破)
     if (n < 10) return false;
-    const bb = getBollingerBands(history, n - 1, 10);
-    const prevBB = getBollingerBands(history, n - 2, 10);
+    const bb = getBollingerBands(targetHistory, n - 1, 10);
+    const prevBB = getBollingerBands(targetHistory, n - 2, 10);
     
     const isBandNarrow = prevBB.width < 0.12;
     const isBreakout = today.close > bb.upper;
@@ -680,23 +680,19 @@ function checkStrategy(strategyId, history) {
   
   if (strategyId === 'strategy3') {
     // 3. 聰明融資抄底 (籌碼洗淨)
-    // Flat price over last 4 days (change < 3%)
-    const lastCloses = history.slice(-4).map(h => h.close);
+    const lastCloses = targetHistory.slice(-4).map(h => h.close);
     const priceFlat = (Math.max(...lastCloses) - Math.min(...lastCloses)) / lastCloses[0] < 0.035;
     
-    // Margin decreased sum is negative
-    const marginDecrease = today.margin_change < 0 && history[n-2].margin_change < 0;
-    
-    // Institutions Net Buy today
+    const marginDecrease = today.margin_change < 0 && targetHistory[n-2].margin_change < 0;
     const instBuy = (today.foreign_net + today.sitc_net) > 50;
     
     return priceFlat && marginDecrease && instBuy;
   }
   
   if (strategyId === 'strategy4') {
-    // 4. 可轉債轉換價黃金交叉 (using breakout MA20 + dual leverage buy)
-    const ma20 = getMA(history, n - 1, Math.min(n, 20));
-    const crossMA20 = today.close > ma20 && history[n-2].close <= ma20;
+    // 4. 可轉債轉換價黃金交叉
+    const ma20 = getMA(targetHistory, n - 1, Math.min(n, 20));
+    const crossMA20 = today.close > ma20 && targetHistory[n-2].close <= ma20;
     const isDoubleLeverage = today.margin_change > 50 && today.foreign_net > 100;
     
     return crossMA20 && isDoubleLeverage;
@@ -712,11 +708,11 @@ function checkStrategy(strategyId, history) {
   
   if (strategyId === 'strategy6') {
     // 6. 乖離率極端超跌反彈
-    const ma20 = getMA(history, n - 1, Math.min(n, 20));
+    const ma20 = getMA(targetHistory, n - 1, Math.min(n, 20));
     const bias = ma20 > 0 ? ((today.close - ma20) / ma20 * 100) : 0;
     const isOversold = bias < -15;
     
-    const isVolumeStop = today.volume > getMA(history, n - 1, 5) * 1.5;
+    const isVolumeStop = today.volume > getMA(targetHistory, n - 1, 5) * 1.5;
     const isRedOrShadow = today.close > today.open || (today.close - today.low) / (today.high - today.low || 1) > 0.5;
     
     return isOversold && isVolumeStop && isRedOrShadow;
@@ -756,7 +752,66 @@ function getBollingerBands(history, index, period) {
   };
 }
 
-// Draw individual stock price and volume/margin chart
+// Custom Candlestick Wick drawing plugin for Chart.js
+const candlestickPlugin = {
+  id: 'candlestick',
+  beforeDatasetsDraw(chart, args, options) {
+    const { ctx } = chart;
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      if (dataset.label === 'K線') {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        meta.data.forEach((bar, index) => {
+          const raw = dataset.data[index];
+          if (!raw) return;
+          const high = raw.h;
+          const low = raw.l;
+          
+          const yScale = chart.scales.y;
+          const x = bar.x;
+          const yHigh = yScale.getPixelForValue(high);
+          const yLow = yScale.getPixelForValue(low);
+          
+          ctx.save();
+          ctx.strokeStyle = bar.options.backgroundColor;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(x, yHigh);
+          ctx.lineTo(x, yLow);
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+    });
+  }
+};
+
+// Global visibility toggle helper for Drawer Chart
+function updateDatasetVisibility() {
+  if (!stockDetailChart) return;
+  
+  const showMA5 = document.getElementById('chk-ma5').checked;
+  const showMA10 = document.getElementById('chk-ma10').checked;
+  const showMA20 = document.getElementById('chk-ma20').checked;
+  const showBB = document.getElementById('chk-bb').checked;
+  
+  stockDetailChart.data.datasets.forEach(ds => {
+    if (ds.label === 'MA5') ds.hidden = !showMA5;
+    if (ds.label === 'MA10') ds.hidden = !showMA10;
+    if (ds.label === 'MA20') ds.hidden = !showMA20;
+    if (ds.label.includes('BB')) ds.hidden = !showBB;
+  });
+  stockDetailChart.update();
+}
+
+// Bind indicators checkboxes change listeners
+['chk-ma5', 'chk-ma10', 'chk-ma20', 'chk-bb'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', updateDatasetVisibility);
+  }
+});
+
+// Draw professional K-line (Candlestick) & Volume split charts
 function openStockDrawer(code) {
   const drawer = document.getElementById('stock-detail-drawer');
   drawer.classList.add('open');
@@ -782,38 +837,193 @@ function openStockDrawer(code) {
   
   document.getElementById('detail-margin-bal').innerText = `${latest.margin_today.toLocaleString()} 張`;
 
-  // Draw Stock Mini Chart
-  const ctx = document.getElementById('stock-detail-chart').getContext('2d');
+  // --- Calculate MA & BB Series ---
+  const prices = history.map(h => h.data.close);
+  const ma5 = [];
+  const ma10 = [];
+  const ma20 = [];
+  const bbUpper = [];
+  const bbLower = [];
+  const bbMiddle = [];
+
+  for (let i = 0; i < prices.length; i++) {
+    // MA5
+    if (i >= 4) {
+      let sum = 0; for (let j = i - 4; j <= i; j++) sum += prices[j];
+      ma5.push(sum / 5);
+    } else { ma5.push(null); }
+
+    // MA10
+    if (i >= 9) {
+      let sum = 0; for (let j = i - 9; j <= i; j++) sum += prices[j];
+      ma10.push(sum / 10);
+    } else { ma10.push(null); }
+
+    // MA20 & BB(20)
+    if (i >= 19) {
+      let sum = 0; for (let j = i - 19; j <= i; j++) sum += prices[j];
+      const mean = sum / 20;
+      ma20.push(mean);
+      bbMiddle.push(mean);
+
+      let varSum = 0; for (let j = i - 19; j <= i; j++) varSum += Math.pow(prices[j] - mean, 2);
+      const stdDev = Math.sqrt(varSum / 20);
+      bbUpper.push(mean + 2 * stdDev);
+      bbLower.push(mean - 2 * stdDev);
+    } else {
+      ma20.push(null);
+      bbMiddle.push(null);
+      bbUpper.push(null);
+      bbLower.push(null);
+    }
+  }
+
+  // --- Draw Candlestick Price Chart ---
+  const priceCtx = document.getElementById('stock-detail-chart').getContext('2d');
   if (stockDetailChart) {
     stockDetailChart.destroy();
   }
 
   const labels = history.map(h => formatDateString(h.date).substring(5));
-  const prices = history.map(h => h.data.close);
-  const margins = history.map(h => h.data.margin_change);
+  const klineData = history.map(h => ({
+    x: formatDateString(h.date).substring(5),
+    y: [h.data.open, h.data.close],
+    h: h.data.high,
+    l: h.data.low
+  }));
 
-  stockDetailChart = new Chart(ctx, {
+  const candleColors = history.map(h => h.data.close >= h.data.open ? '#ff3860' : '#00f2fe');
+
+  stockDetailChart = new Chart(priceCtx, {
+    type: 'bar',
     data: {
       labels: labels,
       datasets: [
         {
-          type: 'line',
-          label: '收盤價',
-          data: prices,
-          borderColor: '#818cf8',
-          borderWidth: 2,
-          pointRadius: 1,
-          yAxisID: 'y',
-          tension: 0.2
+          label: 'K線',
+          data: klineData,
+          backgroundColor: candleColors,
+          borderColor: candleColors,
+          borderWidth: 1,
+          barPercentage: 0.65
         },
         {
-          type: 'bar',
-          label: '融資增減',
-          data: margins,
-          backgroundColor: margins.map(m => m >= 0 ? 'rgba(255, 56, 96, 0.4)' : 'rgba(0, 242, 254, 0.4)'),
-          borderColor: margins.map(m => m >= 0 ? '#ff3860' : '#00f2fe'),
+          type: 'line',
+          label: 'MA5',
+          data: ma5,
+          borderColor: '#eab308',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          type: 'line',
+          label: 'MA10',
+          data: ma10,
+          borderColor: '#a855f7',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          type: 'line',
+          label: 'MA20',
+          data: ma20,
+          borderColor: '#3b82f6',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          type: 'line',
+          label: 'BB Upper',
+          data: bbUpper,
+          borderColor: 'rgba(255, 255, 255, 0.12)',
           borderWidth: 1,
-          yAxisID: 'y1'
+          borderDash: [3, 3],
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          type: 'line',
+          label: 'BB Lower',
+          data: bbLower,
+          borderColor: 'rgba(255, 255, 255, 0.12)',
+          borderWidth: 1,
+          borderDash: [3, 3],
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    plugins: [candlestickPlugin],
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 22, 42, 0.95)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: '#818cf8',
+          borderWidth: 1,
+          padding: 8,
+          callbacks: {
+            label: function(context) {
+              if (context.dataset.label === 'K線') {
+                const raw = context.raw;
+                return [
+                  `開盤: ${raw.y[0].toFixed(2)}`,
+                  `收盤: ${raw.y[1].toFixed(2)}`,
+                  `最高: ${raw.h.toFixed(2)}`,
+                  `最低: ${raw.l.toFixed(2)}`
+                ];
+              }
+              return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: false, // hide x axis for the price chart
+          grid: { display: false }
+        },
+        y: {
+          position: 'left',
+          grid: { color: 'rgba(255, 255, 255, 0.02)' },
+          ticks: { color: '#9ca3af', font: { size: 9 } }
+        }
+      }
+    }
+  });
+
+  // Apply checkbox toggles visibility immediately
+  updateDatasetVisibility();
+
+  // --- Draw Volume Chart ---
+  const volCtx = document.getElementById('stock-volume-chart').getContext('2d');
+  if (stockVolumeChart) {
+    stockVolumeChart.destroy();
+  }
+
+  const volumes = history.map(h => h.data.volume);
+  const volColors = history.map(h => h.data.close >= h.data.open ? 'rgba(255, 56, 96, 0.5)' : 'rgba(0, 242, 254, 0.5)');
+  const volBorderColors = history.map(h => h.data.close >= h.data.open ? '#ff3860' : '#00f2fe');
+
+  stockVolumeChart = new Chart(volCtx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '成交量',
+          data: volumes,
+          backgroundColor: volColors,
+          borderColor: volBorderColors,
+          borderWidth: 1,
+          barPercentage: 0.65
         }
       ]
     },
@@ -821,19 +1031,34 @@ function openStockDrawer(code) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 22, 42, 0.95)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: function(context) {
+              return `成交量: ${context.parsed.y.toLocaleString()} 張`;
+            }
+          }
+        }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { size: 9 } } },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#6b7280', font: { size: 9 } }
+        },
         y: {
           position: 'left',
           grid: { color: 'rgba(255, 255, 255, 0.02)' },
-          ticks: { color: '#9ca3af', font: { size: 9 } }
-        },
-        y1: {
-          position: 'right',
-          grid: { display: false },
-          ticks: { color: '#9ca3af', font: { size: 9 } }
+          ticks: {
+            color: '#9ca3af',
+            font: { size: 8 },
+            callback: function(value) {
+              if (value >= 1000) return (value / 1000) + 'K';
+              return value;
+            }
+          }
         }
       }
     }

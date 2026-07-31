@@ -358,9 +358,42 @@
               <button class="btn-close" id="btn-close-drawer">✕</button>
             </div>
             <div class="drawer-body">
-              <div class="detail-chart-container">
-                <canvas id="stock-detail-chart"></canvas>
+              <!-- Interactive Indicators Toggles -->
+              <div class="drawer-controls">
+                <div class="control-group">
+                  <span class="control-label">均線：</span>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-ma5" checked> MA5
+                    <span class="checkmark"></span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-ma10" checked> MA10
+                    <span class="checkmark"></span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-ma20" checked> MA20
+                    <span class="checkmark"></span>
+                  </label>
+                </div>
+                <div class="control-group">
+                  <span class="control-label">指標：</span>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="chk-bb" checked> 布林通道
+                    <span class="checkmark"></span>
+                  </label>
+                </div>
               </div>
+
+              <!-- Price & Volume Charts -->
+              <div class="detail-chart-wrapper">
+                <div class="detail-chart-container price-chart">
+                  <canvas id="stock-detail-chart"></canvas>
+                </div>
+                <div class="detail-chart-container volume-chart">
+                  <canvas id="stock-volume-chart"></canvas>
+                </div>
+              </div>
+
               <div class="detail-metrics-grid">
                 <div class="metric-box">
                   <span class="label">今日最高 / 最低</span>

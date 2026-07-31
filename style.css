@@ -872,13 +872,65 @@ body {
   flex-grow: 1;
 }
 
-.detail-chart-container {
-  position: relative;
-  width: 100%;
-  height: 240px;
+.drawer-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.control-label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.checkbox-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.checkbox-container input {
+  cursor: pointer;
+  accent-color: var(--neon-blue);
+}
+
+.detail-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   background: rgba(255, 255, 255, 0.01);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 8px;
+}
+
+.detail-chart-container {
+  position: relative;
+  width: 100%;
+}
+
+.price-chart {
+  height: 250px !important;
+}
+
+.volume-chart {
+  height: 100px !important;
 }
 
 .detail-metrics-grid {
