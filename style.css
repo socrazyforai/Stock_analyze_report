@@ -1065,40 +1065,36 @@ body {
 }
 
 .sub-chart-large {
-  height: 150px !important;
+  height: 120px !important;
 }
 
-/* Subchart Tabs Bar */
-.subchart-tabs {
+/* Subchart Checkbox Controls Panel */
+.subchart-controls-panel {
   display: flex;
-  gap: 4px;
-  border-bottom: 1px solid #f1f5f9;
-  padding: 4px;
-  margin: 8px 0;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  padding: 8px 12px;
   background: #f8fafc;
-  border-radius: 6px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin: 6px 0 10px 0;
 }
 
-.subchart-tab {
-  background: transparent;
-  border: none;
-  color: #64748b;
-  padding: 6px 14px;
+.subchart-controls-panel .control-label {
   font-size: 0.8rem;
-  font-weight: 600;
-  border-radius: 4px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.subchart-controls-panel .checkbox-container {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #334155;
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.subchart-tab:hover {
-  color: #0f172a;
-  background: rgba(15, 23, 42, 0.03);
-}
-
-.subchart-tab.active {
-  background: #2563eb !important;
-  color: #ffffff !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Right Summary Card and Metrics */

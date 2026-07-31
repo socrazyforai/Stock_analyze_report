@@ -803,13 +803,39 @@ function updateDatasetVisibility() {
   stockDetailChart.update();
 }
 
-// Bind indicators checkboxes change listeners
+// Bind indicators checkboxes change listeners for drawer
 ['chk-ma5', 'chk-ma10', 'chk-ma20', 'chk-bb'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('change', updateDatasetVisibility);
   }
 });
+
+// Stacking Subcharts Variables
+let currentAnalysisHistory = [];
+let analysisVolumeChart = null;
+let analysisInstChart = null;
+let analysisMarginChart = null;
+let analysisKdChart = null;
+
+// Bind Subchart checkbox change listeners
+['subchart-chk-volume', 'subchart-chk-inst', 'subchart-chk-margin', 'subchart-chk-kd'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', () => {
+      drawAnalysisSubCharts();
+    });
+  }
+});
+
+// Back Button Navigation for analysis view
+const btnBack = document.getElementById('btn-back-to-screener');
+if (btnBack) {
+  btnBack.addEventListener('click', () => {
+    document.getElementById('stock-analysis-view').classList.remove('active');
+    document.getElementById('screener-view').classList.add('active');
+  });
+}
 
 // Open dedicated full-screen Stock Analysis View
 function openStockAnalysis(code) {
@@ -870,14 +896,14 @@ function openStockAnalysis(code) {
 
   // Draw Charts
   drawAnalysisPriceChart();
-  drawAnalysisSubChart();
+  drawAnalysisSubCharts();
 }
 
 // Draw K-Line Price Chart in full screen view using official TradingView Widget
 function drawAnalysisPriceChart() {
   const latest = currentAnalysisHistory[currentAnalysisHistory.length - 1].data;
   const code = latest.symbol;
-  const marketType = latest.market === 'TWO' ? 'TWO' : 'TWSE';
+  const marketType = (latest.market === 'TWO' || latest.market === 'TPEX') ? 'TPEX' : 'TWSE';
   
   if (typeof TradingView !== 'undefined') {
     new TradingView.widget({
@@ -905,136 +931,201 @@ function drawAnalysisPriceChart() {
   }
 }
 
-// Draw flexible Subcharts based on user indicator tabs selection
-let analysisSubChart = null;
-
-function drawAnalysisSubChart() {
+// Draw stacked Subcharts based on user indicator checkboxes selection
+function drawAnalysisSubCharts() {
   const history = currentAnalysisHistory;
-  const volCtx = document.getElementById('analysis-sub-chart').getContext('2d');
-  
-  if (analysisSubChart) {
-    analysisSubChart.destroy();
-  }
-
+  if (!history || history.length === 0) return;
   const labels = history.map(h => formatDateString(h.date).substring(5));
-  let datasets = [];
 
-  if (analysisSelectedSubchartType === 'volume') {
+  // 1. Volume Subchart
+  const showVol = document.getElementById('subchart-chk-volume').checked;
+  const volContainer = document.getElementById('container-sub-volume');
+  if (showVol) {
+    volContainer.style.display = 'block';
+    const ctx = document.getElementById('analysis-sub-chart-volume').getContext('2d');
+    if (analysisVolumeChart) analysisVolumeChart.destroy();
+
     const volumes = history.map(h => h.data.volume);
     const volColors = history.map(h => h.data.close >= h.data.open ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
     const volBorderColors = history.map(h => h.data.close >= h.data.open ? '#ef4444' : '#22c55e');
 
-    datasets.push({
+    analysisVolumeChart = new Chart(ctx, {
       type: 'bar',
-      label: '成交量',
-      data: volumes,
-      backgroundColor: volColors,
-      borderColor: volBorderColors,
-      borderWidth: 1,
-      barPercentage: 0.65
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '成交量',
+          data: volumes,
+          backgroundColor: volColors,
+          borderColor: volBorderColors,
+          borderWidth: 1,
+          barPercentage: 0.65
+        }]
+      },
+      options: getSubchartOptions('成交量', true)
     });
-  } 
-  else if (analysisSelectedSubchartType === 'inst') {
+  } else {
+    volContainer.style.display = 'none';
+    if (analysisVolumeChart) { analysisVolumeChart.destroy(); analysisVolumeChart = null; }
+  }
+
+  // 2. Institutions Subchart
+  const showInst = document.getElementById('subchart-chk-inst').checked;
+  const instContainer = document.getElementById('container-sub-inst');
+  if (showInst) {
+    instContainer.style.display = 'block';
+    const ctx = document.getElementById('analysis-sub-chart-inst').getContext('2d');
+    if (analysisInstChart) analysisInstChart.destroy();
+
     const instNet = history.map(h => h.data.foreign_net + h.data.sitc_net + h.data.dealers_net);
     const instColors = instNet.map(v => v >= 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
     const instBorderColors = instNet.map(v => v >= 0 ? '#ef4444' : '#22c55e');
 
-    datasets.push({
+    analysisInstChart = new Chart(ctx, {
       type: 'bar',
-      label: '法人買賣超',
-      data: instNet,
-      backgroundColor: instColors,
-      borderColor: instBorderColors,
-      borderWidth: 1,
-      barPercentage: 0.65
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '法人買賣超',
+          data: instNet,
+          backgroundColor: instColors,
+          borderColor: instBorderColors,
+          borderWidth: 1,
+          barPercentage: 0.65
+        }]
+      },
+      options: getSubchartOptions('法人買賣超', true)
     });
-  } 
-  else if (analysisSelectedSubchartType === 'margin') {
+  } else {
+    instContainer.style.display = 'none';
+    if (analysisInstChart) { analysisInstChart.destroy(); analysisInstChart = null; }
+  }
+
+  // 3. Margin Subchart
+  const showMargin = document.getElementById('subchart-chk-margin').checked;
+  const marginContainer = document.getElementById('container-sub-margin');
+  if (showMargin) {
+    marginContainer.style.display = 'block';
+    const ctx = document.getElementById('analysis-sub-chart-margin').getContext('2d');
+    if (analysisMarginChart) analysisMarginChart.destroy();
+
     const marginNet = history.map(h => h.data.margin_change);
     const marginColors = marginNet.map(v => v >= 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
     const marginBorderColors = marginNet.map(v => v >= 0 ? '#ef4444' : '#22c55e');
 
-    datasets.push({
+    analysisMarginChart = new Chart(ctx, {
       type: 'bar',
-      label: '融資增減',
-      data: marginNet,
-      backgroundColor: marginColors,
-      borderColor: marginBorderColors,
-      borderWidth: 1,
-      barPercentage: 0.65
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '融資增減',
+          data: marginNet,
+          backgroundColor: marginColors,
+          borderColor: marginBorderColors,
+          borderWidth: 1,
+          barPercentage: 0.65
+        }]
+      },
+      options: getSubchartOptions('融資增減', true)
     });
-  } 
-  else if (analysisSelectedSubchartType === 'kd') {
-    const kd = calculateKD(history);
-    
-    datasets.push({
-      type: 'line',
-      label: 'K值',
-      data: kd.k,
-      borderColor: '#f59e0b',
-      borderWidth: 1.5,
-      pointRadius: 0,
-      fill: false,
-      tension: 0.2
-    });
-    datasets.push({
-      type: 'line',
-      label: 'D值',
-      data: kd.d,
-      borderColor: '#3b82f6',
-      borderWidth: 1.5,
-      pointRadius: 0,
-      fill: false,
-      tension: 0.2
-    });
+  } else {
+    marginContainer.style.display = 'none';
+    if (analysisMarginChart) { analysisMarginChart.destroy(); analysisMarginChart = null; }
   }
 
-  analysisSubChart = new Chart(volCtx, {
-    data: {
-      labels: labels,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: analysisSelectedSubchartType === 'kd' },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          callbacks: {
-            label: function(context) {
-              const val = context.parsed.y;
-              if (analysisSelectedSubchartType === 'volume' || analysisSelectedSubchartType === 'inst' || analysisSelectedSubchartType === 'margin') {
-                return `${context.dataset.label}: ${val.toLocaleString()} 張`;
-              }
-              return `${context.dataset.label}: ${val.toFixed(2)}`;
+  // 4. KD Subchart
+  const showKD = document.getElementById('subchart-chk-kd').checked;
+  const kdContainer = document.getElementById('container-sub-kd');
+  if (showKD) {
+    kdContainer.style.display = 'block';
+    const ctx = document.getElementById('analysis-sub-chart-kd').getContext('2d');
+    if (analysisKdChart) analysisKdChart.destroy();
+
+    const kd = calculateKD(history);
+
+    analysisKdChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'K值',
+            data: kd.k,
+            borderColor: '#f59e0b',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.2
+          },
+          {
+            label: 'D值',
+            data: kd.d,
+            borderColor: '#3b82f6',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.2
+          }
+        ]
+      },
+      options: getSubchartOptions('KD(9,3,3)', false, true)
+    });
+  } else {
+    kdContainer.style.display = 'none';
+    if (analysisKdChart) { analysisKdChart.destroy(); analysisKdChart = null; }
+  }
+}
+
+// Helper to generate clean, consistent options for stacked subcharts
+function getSubchartOptions(title, isVolumeFormat, showLegend = false) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: showLegend },
+      title: {
+        display: true,
+        text: title,
+        align: 'start',
+        color: '#64748b',
+        font: { size: 10, weight: 'bold' },
+        padding: { top: 2, bottom: 2 }
+      },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        callbacks: {
+          label: function(context) {
+            const val = context.parsed.y;
+            if (isVolumeFormat) {
+              return `${context.dataset.label}: ${val.toLocaleString()} 張`;
             }
+            return `${context.dataset.label}: ${val.toFixed(2)}`;
           }
         }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#64748b', font: { size: 9 } }
       },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: '#64748b', font: { size: 9 } }
-        },
-        y: {
-          position: 'left',
-          grid: { color: 'rgba(15, 23, 42, 0.04)' },
-          ticks: {
-            color: '#64748b',
-            font: { size: 8 },
-            callback: function(value) {
-              if (analysisSelectedSubchartType === 'kd') return value;
-              if (Math.abs(value) >= 1000) return (value / 1000) + 'K';
-              return value;
-            }
+      y: {
+        position: 'left',
+        grid: { color: 'rgba(15, 23, 42, 0.04)' },
+        ticks: {
+          color: '#64748b',
+          font: { size: 8 },
+          callback: function(value) {
+            if (!isVolumeFormat) return value;
+            if (Math.abs(value) >= 1000) return (value / 1000) + 'K';
+            return value;
           }
         }
       }
     }
-  });
+  };
 }
 
 // Calculate KD(9, 3, 3) indicator arrays

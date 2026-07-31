@@ -434,16 +434,35 @@
                 <div id="analysis-price-chart" style="width: 100%; height: 100%;"></div>
               </div>
               
-              <!-- Subchart Selection Tabs -->
-              <div class="subchart-tabs">
-                <button class="subchart-tab active" data-type="volume">成交量</button>
-                <button class="subchart-tab" data-type="inst">三大法人買賣超</button>
-                <button class="subchart-tab" data-type="margin">融資券變化</button>
-                <button class="subchart-tab" data-type="kd">KD 指標</button>
+              <!-- Subchart Selection Controls -->
+              <div class="subchart-controls-panel">
+                <span class="control-label">副圖指標：</span>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="subchart-chk-volume" checked> 成交量
+                </label>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="subchart-chk-inst" checked> 三大法人買賣超
+                </label>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="subchart-chk-margin" checked> 融資券變化
+                </label>
+                <label class="checkbox-container">
+                  <input type="checkbox" id="subchart-chk-kd"> KD 指標
+                </label>
               </div>
               
-              <div class="analysis-chart-container sub-chart-large">
-                <canvas id="analysis-sub-chart"></canvas>
+              <!-- Stacking Subcharts -->
+              <div class="analysis-chart-container sub-chart-large" id="container-sub-volume">
+                <canvas id="analysis-sub-chart-volume"></canvas>
+              </div>
+              <div class="analysis-chart-container sub-chart-large" id="container-sub-inst">
+                <canvas id="analysis-sub-chart-inst"></canvas>
+              </div>
+              <div class="analysis-chart-container sub-chart-large" id="container-sub-margin">
+                <canvas id="analysis-sub-chart-margin"></canvas>
+              </div>
+              <div class="analysis-chart-container sub-chart-large" id="container-sub-kd" style="display: none;">
+                <canvas id="analysis-sub-chart-kd"></canvas>
               </div>
             </div>
           </div>
