@@ -1044,11 +1044,34 @@ function drawAnalysisPriceChart(interval = 'D', range = '1Y') {
   if (interval === 'W') tvInterval = 'W';
   if (interval === 'M') tvInterval = 'M';
   
+  // Compile studies based on checked checkboxes on the host page
+  const studiesArr = [];
+  if (document.getElementById('chk-tv-ma5').checked) {
+    studiesArr.push("MASimple@tv-basicstudies");
+  }
+  if (document.getElementById('chk-tv-ma10').checked) {
+    studiesArr.push("MASimple@tv-basicstudies");
+  }
+  if (document.getElementById('chk-tv-ma20').checked) {
+    studiesArr.push("MASimple@tv-basicstudies");
+  }
+  if (document.getElementById('chk-tv-ma60').checked) {
+    studiesArr.push("MASimple@tv-basicstudies");
+  }
+  if (document.getElementById('chk-tv-ma240').checked) {
+    studiesArr.push("MASimple@tv-basicstudies");
+  }
+  if (document.getElementById('chk-sub-bb').checked) {
+    studiesArr.push("BB@tv-basicstudies");
+  }
+  
+  const studiesParam = encodeURIComponent(JSON.stringify(studiesArr));
+  
   container.innerHTML = '';
   
-  // Construct widget iframe
+  // Construct widget iframe with studies
   const iframe = document.createElement('iframe');
-  iframe.src = `https://s.tradingview.com/widgetembed/?symbol=${marketType}:${code}&interval=${tvInterval}&theme=light&style=1&timezone=Asia%2FTaipei&locale=zh_TW&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6`;
+  iframe.src = `https://s.tradingview.com/widgetembed/?symbol=${marketType}:${code}&interval=${tvInterval}&theme=light&style=1&timezone=Asia%2FTaipei&locale=zh_TW&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=${studiesParam}`;
   iframe.style.width = '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';
