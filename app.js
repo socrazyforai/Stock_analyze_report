@@ -817,6 +817,8 @@ let analysisVolumeChart = null;
 let analysisInstChart = null;
 let analysisMarginChart = null;
 let analysisKdChart = null;
+let localPriceChart = null;
+let klineSource = 'tv'; // 'tv' (TradingView) or 'local' (Chart.js)
 
 // Bind Subchart checkbox change listeners
 ['chk-sub-volume', 'chk-sub-inst', 'chk-sub-margin', 'chk-sub-kd'].forEach(id => {
@@ -837,9 +839,46 @@ document.querySelectorAll('.btn-scale').forEach(btn => {
     const interval = e.currentTarget.getAttribute('data-interval') || 'D';
     const range = e.currentTarget.getAttribute('data-range') || '1Y';
     
-    // Reload TradingView chart with the clicked interval/range!
-    drawAnalysisPriceChart(interval, range);
+    // Reload TradingView chart with the clicked interval/range if in cloud mode!
+    if (klineSource === 'tv') {
+      drawAnalysisPriceChart(interval, range);
+    }
   });
+});
+
+// Bind K-line Source Selector
+const btnSourceTv = document.getElementById('btn-source-tv');
+const btnSourceLocal = document.getElementById('btn-source-local');
+if (btnSourceTv && btnSourceLocal) {
+  btnSourceTv.addEventListener('click', () => {
+    btnSourceTv.classList.add('active');
+    btnSourceLocal.classList.remove('active');
+    klineSource = 'tv';
+    document.getElementById('analysis-price-chart').style.display = 'block';
+    document.getElementById('analysis-local-price-chart').style.display = 'none';
+    drawAnalysisPriceChart();
+  });
+  
+  btnSourceLocal.addEventListener('click', () => {
+    btnSourceLocal.classList.add('active');
+    btnSourceTv.classList.remove('active');
+    klineSource = 'local';
+    document.getElementById('analysis-price-chart').style.display = 'none';
+    document.getElementById('analysis-local-price-chart').style.display = 'block';
+    drawLocalPriceChart();
+  });
+}
+
+// Bind K-line indicator check change listeners
+['chk-tv-ma5', 'chk-tv-ma10', 'chk-tv-ma20', 'chk-tv-ma60', 'chk-tv-ma240', 'chk-sub-bb'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', () => {
+      if (klineSource === 'local') {
+        drawLocalPriceChart();
+      }
+    });
+  }
 });
 
 // Bind Drawing tools helper popups
@@ -942,7 +981,15 @@ function openStockAnalysis(code) {
   document.getElementById('analysis-margin-bal').className = 'val ' + (latest.margin_change >= 0 ? 'up-text' : 'down-text');
 
   // Draw Charts
-  drawAnalysisPriceChart();
+  if (klineSource === 'tv') {
+    document.getElementById('analysis-price-chart').style.display = 'block';
+    document.getElementById('analysis-local-price-chart').style.display = 'none';
+    drawAnalysisPriceChart();
+  } else {
+    document.getElementById('analysis-price-chart').style.display = 'none';
+    document.getElementById('analysis-local-price-chart').style.display = 'block';
+    drawLocalPriceChart();
+  }
   drawAnalysisSubCharts();
 }
 
@@ -974,6 +1021,224 @@ function drawAnalysisPriceChart(interval = 'D', range = '1Y') {
   
   container.appendChild(iframe);
 }
+
+// Draw K-Line Price Chart locally using Chart.js as a robust fallback for restricted network environments
+function drawLocalPriceChart() {
+  const history = currentAnalysisHistory;
+  if (!history || history.length === 0) return;
+  
+  const ctx = document.getElementById('analysis-local-price-chart').getContext('2d');
+  if (localPriceChart) {
+    localPriceChart.destroy();
+  }
+  
+  const labels = history.map(h => formatDateString(h.date).substring(5));
+  const prices = history.map(h => h.data.close);
+  
+  // Calculate MA & BB Series
+  const ma5 = [];
+  const ma10 = [];
+  const ma20 = [];
+  const ma60 = [];
+  const ma240 = [];
+  const bbUpper = [];
+  const bbLower = [];
+  const bbMiddle = [];
+  
+  for (let i = 0; i < prices.length; i++) {
+    // MA5
+    if (i >= 4) {
+      let sum = 0; for (let j = i - 4; j <= i; j++) sum += prices[j];
+      ma5.push(parseFloat((sum / 5).toFixed(2)));
+    } else { ma5.push(null); }
+    
+    // MA10
+    if (i >= 9) {
+      let sum = 0; for (let j = i - 9; j <= i; j++) sum += prices[j];
+      ma10.push(parseFloat((sum / 10).toFixed(2)));
+    } else { ma10.push(null); }
+    
+    // MA20 & BB(20)
+    if (i >= 19) {
+      let sum = 0; for (let j = i - 19; j <= i; j++) sum += prices[j];
+      const mean = sum / 20;
+      ma20.push(parseFloat(mean.toFixed(2)));
+      bbMiddle.push(parseFloat(mean.toFixed(2)));
+      
+      let varianceSum = 0;
+      for (let j = i - 19; j <= i; j++) {
+        varianceSum += Math.pow(prices[j] - mean, 2);
+      }
+      const stdDev = Math.sqrt(varianceSum / 20);
+      bbUpper.push(parseFloat((mean + 2 * stdDev).toFixed(2)));
+      bbLower.push(parseFloat((mean - 2 * stdDev).toFixed(2)));
+    } else {
+      ma20.push(null);
+      bbMiddle.push(null);
+      bbUpper.push(null);
+      bbLower.push(null);
+    }
+    
+    // MA60
+    if (i >= 59) {
+      let sum = 0; for (let j = i - 59; j <= i; j++) sum += prices[j];
+      ma60.push(parseFloat((sum / 60).toFixed(2)));
+    } else { ma60.push(null); }
+    
+    // MA240
+    if (i >= 239) {
+      let sum = 0; for (let j = i - 239; j <= i; j++) sum += prices[j];
+      ma240.push(parseFloat((sum / 240).toFixed(2)));
+    } else { ma240.push(null); }
+  }
+  
+  // Construct datasets dynamically based on checkbox state
+  const datasets = [
+    {
+      label: '收盤價',
+      data: prices,
+      borderColor: '#0f172a',
+      borderWidth: 2,
+      pointBackgroundColor: '#0f172a',
+      pointRadius: 2,
+      fill: false,
+      tension: 0.15
+    }
+  ];
+  
+  if (document.getElementById('chk-tv-ma5').checked) {
+    datasets.push({
+      label: 'MA5',
+      data: ma5,
+      borderColor: '#f59e0b',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+  }
+  if (document.getElementById('chk-tv-ma10').checked) {
+    datasets.push({
+      label: 'MA10',
+      data: ma10,
+      borderColor: '#a855f7',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+  }
+  if (document.getElementById('chk-tv-ma20').checked) {
+    datasets.push({
+      label: 'MA20',
+      data: ma20,
+      borderColor: '#3b82f6',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+  }
+  if (document.getElementById('chk-tv-ma60').checked) {
+    datasets.push({
+      label: 'MA60',
+      data: ma60,
+      borderColor: '#10b981',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+  }
+  if (document.getElementById('chk-tv-ma240').checked) {
+    datasets.push({
+      label: 'MA240',
+      data: ma240,
+      borderColor: '#ef4444',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+  }
+  
+  // BB(20)
+  if (document.getElementById('chk-sub-bb').checked) {
+    datasets.push({
+      label: 'BB 上軌',
+      data: bbUpper,
+      borderColor: 'rgba(6, 182, 212, 0.4)',
+      borderWidth: 1,
+      borderDash: [4, 4],
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+    datasets.push({
+      label: 'BB 中軌',
+      data: bbMiddle,
+      borderColor: 'rgba(6, 182, 212, 0.4)',
+      borderWidth: 1,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+    datasets.push({
+      label: 'BB 下軌',
+      data: bbLower,
+      borderColor: 'rgba(6, 182, 212, 0.4)',
+      borderWidth: 1,
+      borderDash: [4, 4],
+      pointRadius: 0,
+      fill: false,
+      tension: 0.15
+    });
+  }
+  
+  localPriceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { boxWidth: 12, font: { size: 10 } }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: function(context) {
+              return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#64748b', font: { size: 9 } }
+        },
+        y: {
+          grid: { color: 'rgba(15, 23, 42, 0.04)' },
+          ticks: { color: '#64748b', font: { size: 9 } }
+        }
+      }
+    }
+  });
+}
+
 
 // Draw stacked Subcharts based on user indicator checkboxes selection
 function drawAnalysisSubCharts() {
