@@ -431,7 +431,7 @@ function getPreviousTradingDay(dateStr) {
 // Load data from static file on server
 async function loadData() {
   try {
-    const res = await fetch('data/history.json?v=2.9');
+    const res = await fetch('data/history.json?v=3.0');
     if (res.ok) {
       rawHistoryData = await res.json();
       console.log(`[App] Successfully loaded ${rawHistoryData.length} days of historical data.`);
@@ -566,7 +566,7 @@ async function initScreener() {
   try {
     const promises = datesList.map(async date => {
       try {
-        const res = await fetch(`data/daily_stocks/${date}.json?v=2.9`);
+        const res = await fetch(`data/daily_stocks/${date}.json?v=3.0`);
         if (res.ok) {
           const data = await res.json();
           stockDailyDataSeries[date] = data;
@@ -1047,22 +1047,22 @@ function drawAnalysisPriceChart(interval = 'D', range = '1Y') {
   // Compile studies based on checked checkboxes on the host page
   const studiesArr = [];
   if (document.getElementById('chk-tv-ma5').checked) {
-    studiesArr.push("MASimple@tv-basicstudies");
+    studiesArr.push({ "id": "MASimple@tv-basicstudies", "inputs": { "length": 5 } });
   }
   if (document.getElementById('chk-tv-ma10').checked) {
-    studiesArr.push("MASimple@tv-basicstudies");
+    studiesArr.push({ "id": "MASimple@tv-basicstudies", "inputs": { "length": 10 } });
   }
   if (document.getElementById('chk-tv-ma20').checked) {
-    studiesArr.push("MASimple@tv-basicstudies");
+    studiesArr.push({ "id": "MASimple@tv-basicstudies", "inputs": { "length": 20 } });
   }
   if (document.getElementById('chk-tv-ma60').checked) {
-    studiesArr.push("MASimple@tv-basicstudies");
+    studiesArr.push({ "id": "MASimple@tv-basicstudies", "inputs": { "length": 60 } });
   }
   if (document.getElementById('chk-tv-ma240').checked) {
-    studiesArr.push("MASimple@tv-basicstudies");
+    studiesArr.push({ "id": "MASimple@tv-basicstudies", "inputs": { "length": 240 } });
   }
   if (document.getElementById('chk-sub-bb').checked) {
-    studiesArr.push("BB@tv-basicstudies");
+    studiesArr.push({ "id": "BB@tv-basicstudies", "inputs": { "length": 20, "stddev": 2 } });
   }
   
   const studiesParam = encodeURIComponent(JSON.stringify(studiesArr));
