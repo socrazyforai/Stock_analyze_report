@@ -73,6 +73,7 @@ try {
                         "close"         = (Parse-Number $row[8])
                         "volume"        = ([Math]::Round((Parse-Number $row[2]) / 1000)) # to shares/1000
                         "change"        = $change
+                        "market"        = "TWSE"
                         "margin_buy"    = 0
                         "margin_sell"   = 0
                         "margin_today"  = 0
@@ -163,6 +164,7 @@ try {
                         "close"         = (Parse-Number $row[2])
                         "volume"        = ([Math]::Round((Parse-Number $row[8]) / 1000))
                         "change"        = $change
+                        "market"        = "TWO"
                         "margin_buy"    = 0
                         "margin_sell"   = 0
                         "margin_today"  = 0

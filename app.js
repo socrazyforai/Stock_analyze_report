@@ -811,51 +811,6 @@ function updateDatasetVisibility() {
   }
 });
 
-// Global visibility toggle helper for dedicated Stock Analysis View
-function updateAnalysisDatasetVisibility() {
-  if (!analysisPriceChart) return;
-  
-  const showMA5 = document.getElementById('analysis-chk-ma5').checked;
-  const showMA10 = document.getElementById('analysis-chk-ma10').checked;
-  const showMA20 = document.getElementById('analysis-chk-ma20').checked;
-  const showBB = document.getElementById('analysis-chk-bb').checked;
-  
-  analysisPriceChart.data.datasets.forEach(ds => {
-    if (ds.label === 'MA5') ds.hidden = !showMA5;
-    if (ds.label === 'MA10') ds.hidden = !showMA10;
-    if (ds.label === 'MA20') ds.hidden = !showMA20;
-    if (ds.label.includes('BB')) ds.hidden = !showBB;
-  });
-  analysisPriceChart.update();
-}
-
-// Bind indicators checkboxes change listeners for analysis view
-['analysis-chk-ma5', 'analysis-chk-ma10', 'analysis-chk-ma20', 'analysis-chk-bb'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) {
-    el.addEventListener('change', updateAnalysisDatasetVisibility);
-  }
-});
-
-// Bind Subchart Tab selection listeners
-let currentAnalysisHistory = [];
-let analysisSelectedSubchartType = 'volume';
-
-document.querySelectorAll('.subchart-tab').forEach(tab => {
-  tab.addEventListener('click', (e) => {
-    document.querySelectorAll('.subchart-tab').forEach(t => t.classList.remove('active'));
-    e.currentTarget.classList.add('active');
-    analysisSelectedSubchartType = e.currentTarget.getAttribute('data-type');
-    drawAnalysisSubChart();
-  });
-});
-
-// Back Button Navigation
-document.getElementById('btn-back-to-screener').addEventListener('click', () => {
-  document.getElementById('stock-analysis-view').classList.remove('active');
-  document.getElementById('screener-view').classList.add('active');
-});
-
 // Open dedicated full-screen Stock Analysis View
 function openStockAnalysis(code) {
   // Toggle views
@@ -918,182 +873,36 @@ function openStockAnalysis(code) {
   drawAnalysisSubChart();
 }
 
-// Draw K-Line Price Chart in full screen view
-let analysisPriceChart = null;
-
+// Draw K-Line Price Chart in full screen view using official TradingView Widget
 function drawAnalysisPriceChart() {
-  const history = currentAnalysisHistory;
-  const priceCtx = document.getElementById('analysis-price-chart').getContext('2d');
+  const latest = currentAnalysisHistory[currentAnalysisHistory.length - 1].data;
+  const code = latest.symbol;
+  const marketType = latest.market === 'TWO' ? 'TWO' : 'TWSE';
   
-  if (analysisPriceChart) {
-    analysisPriceChart.destroy();
-  }
-
-  // --- Calculate MA & BB Series ---
-  const prices = history.map(h => h.data.close);
-  const ma5 = [];
-  const ma10 = [];
-  const ma20 = [];
-  const bbUpper = [];
-  const bbLower = [];
-  const bbMiddle = [];
-
-  for (let i = 0; i < prices.length; i++) {
-    if (i >= 4) {
-      let sum = 0; for (let j = i - 4; j <= i; j++) sum += prices[j];
-      ma5.push(sum / 5);
-    } else { ma5.push(null); }
-
-    if (i >= 9) {
-      let sum = 0; for (let j = i - 9; j <= i; j++) sum += prices[j];
-      ma10.push(sum / 10);
-    } else { ma10.push(null); }
-
-    if (i >= 19) {
-      let sum = 0; for (let j = i - 19; j <= i; j++) sum += prices[j];
-      const mean = sum / 20;
-      ma20.push(mean);
-      bbMiddle.push(mean);
-
-      let varSum = 0; for (let j = i - 19; j <= i; j++) varSum += Math.pow(prices[j] - mean, 2);
-      const stdDev = Math.sqrt(varSum / 20);
-      bbUpper.push(mean + 2 * stdDev);
-      bbLower.push(mean - 2 * stdDev);
-    } else {
-      ma20.push(null);
-      bbMiddle.push(null);
-      bbUpper.push(null);
-      bbLower.push(null);
-    }
-  }
-
-  // --- Calculate min/max price for auto-scaling y-axis ---
-  const allPrices = history.flatMap(h => [h.data.open, h.data.close, h.data.high, h.data.low]);
-  const minPrice = Math.min(...allPrices);
-  const maxPrice = Math.max(...allPrices);
-  const priceRange = maxPrice - minPrice;
-  const pricePadding = priceRange * 0.1 || 5;
-  const yMin = Math.max(0, minPrice - pricePadding);
-  const yMax = maxPrice + pricePadding;
-
-  const labels = history.map(h => formatDateString(h.date).substring(5));
-  const klineData = history.map(h => ({
-    x: formatDateString(h.date).substring(5),
-    y: [h.data.open, h.data.close],
-    h: h.data.high,
-    l: h.data.low
-  }));
-
-  const candleColors = history.map(h => h.data.close >= h.data.open ? '#ef4444' : '#22c55e');
-
-  analysisPriceChart = new Chart(priceCtx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'K線',
-          data: klineData,
-          backgroundColor: candleColors,
-          borderColor: candleColors,
-          borderWidth: 1,
-          barPercentage: 0.65
-        },
-        {
-          type: 'line',
-          label: 'MA5',
-          data: ma5,
-          borderColor: '#f59e0b',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false
-        },
-        {
-          type: 'line',
-          label: 'MA10',
-          data: ma10,
-          borderColor: '#a855f7',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false
-        },
-        {
-          type: 'line',
-          label: 'MA20',
-          data: ma20,
-          borderColor: '#3b82f6',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false
-        },
-        {
-          type: 'line',
-          label: 'BB Upper',
-          data: bbUpper,
-          borderColor: 'rgba(15, 23, 42, 0.12)',
-          borderWidth: 1,
-          borderDash: [3, 3],
-          pointRadius: 0,
-          fill: false
-        },
-        {
-          type: 'line',
-          label: 'BB Lower',
-          data: bbLower,
-          borderColor: 'rgba(15, 23, 42, 0.12)',
-          borderWidth: 1,
-          borderDash: [3, 3],
-          pointRadius: 0,
-          fill: false
-        }
+  if (typeof TradingView !== 'undefined') {
+    new TradingView.widget({
+      "autosize": true,
+      "symbol": `${marketType}:${code}`,
+      "interval": "D",
+      "timezone": "Asia/Taipei",
+      "theme": "light",
+      "style": "1",
+      "locale": "zh_TW",
+      "enable_publishing": false,
+      "hide_side_toolbar": true,
+      "allow_symbol_change": false,
+      "container_id": "analysis-price-chart",
+      "studies": [
+        "MASimple@tv-basicstudies",
+        "MASimple@tv-basicstudies",
+        "MASimple@tv-basicstudies",
+        "BB@tv-basicstudies"
       ]
-    },
-    plugins: [candlestickPlugin],
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          borderColor: '#64748b',
-          borderWidth: 1,
-          padding: 8,
-          callbacks: {
-            label: function(context) {
-              if (context.dataset.label === 'K線') {
-                const raw = context.raw;
-                return [
-                  `開盤: ${raw.y[0].toFixed(2)}`,
-                  `收盤: ${raw.y[1].toFixed(2)}`,
-                  `最高: ${raw.h.toFixed(2)}`,
-                  `最低: ${raw.l.toFixed(2)}`
-                ];
-              }
-              return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          display: false,
-          grid: { display: false }
-        },
-        y: {
-          position: 'left',
-          grid: { color: 'rgba(15, 23, 42, 0.04)' },
-          ticks: { color: '#64748b', font: { size: 9 } },
-          min: Math.floor(yMin),
-          max: Math.ceil(yMax)
-        }
-      }
-    }
-  });
-
-  updateAnalysisDatasetVisibility();
+    });
+  } else {
+    document.getElementById('analysis-price-chart').innerHTML = 
+      `<div class="loading-overlay" style="background:transparent; color:#64748b; display:flex; align-items:center; justify-content:center; height:100%;"><p>正在載入 TradingView 雲端 K 線圖...</p></div>`;
+  }
 }
 
 // Draw flexible Subcharts based on user indicator tabs selection

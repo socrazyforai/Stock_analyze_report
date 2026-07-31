@@ -79,6 +79,7 @@ async function run() {
                         close: parseNumber(row[8]),
                         volume: Math.round(parseNumber(row[2]) / 1000), // convert to shares/1000 (張)
                         change: change,
+                        market: 'TWSE',
                         margin_buy: 0,
                         margin_sell: 0,
                         margin_today: 0,
@@ -151,6 +152,7 @@ async function run() {
                         close: parseNumber(row[2]),
                         volume: Math.round(parseNumber(row[8]) / 1000),
                         change: change,
+                        market: 'TWO',
                         margin_buy: 0,
                         margin_sell: 0,
                         margin_today: 0,
