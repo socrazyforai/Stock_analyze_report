@@ -414,7 +414,7 @@ function formatDate(date) {
 // Load data from static file on server
 async function loadData() {
   try {
-    const res = await fetch('data/history.json?v=2.6');
+    const res = await fetch('data/history.json?v=2.7');
     if (res.ok) {
       rawHistoryData = await res.json();
       console.log(`[App] Successfully loaded ${rawHistoryData.length} days of historical data.`);
@@ -530,7 +530,7 @@ async function initScreener() {
   try {
     const promises = datesList.map(async date => {
       try {
-        const res = await fetch(`data/daily_stocks/${date}.json?v=2.6`);
+        const res = await fetch(`data/daily_stocks/${date}.json?v=2.7`);
         if (res.ok) {
           const data = await res.json();
           stockDailyDataSeries[date] = data;
@@ -946,40 +946,33 @@ function openStockAnalysis(code) {
   drawAnalysisSubCharts();
 }
 
-// Draw K-Line Price Chart in full screen view using official TradingView Widget
+// Draw K-Line Price Chart in full screen view using official TradingView Widget Iframe Embed (bypasses corporate firewalls/websockets blocks)
 function drawAnalysisPriceChart(interval = 'D', range = '1Y') {
   const latest = currentAnalysisHistory[currentAnalysisHistory.length - 1].data;
   const code = latest.symbol;
   const marketType = (latest.market === 'TWO' || latest.market === 'TPEX') ? 'TPEX' : 'TWSE';
   
-  if (typeof TradingView !== 'undefined') {
-    const config = {
-      "autosize": true,
-      "symbol": `${marketType}:${code}`,
-      "interval": interval,
-      "timezone": "Asia/Taipei",
-      "theme": "light",
-      "style": "1",
-      "locale": "zh_TW",
-      "enable_publishing": false,
-      "hide_side_toolbar": false,
-      "allow_symbol_change": true,
-      "container_id": "analysis-price-chart",
-      "studies": [
-        "MASimple@tv-basicstudies",
-        "MASimple@tv-basicstudies",
-        "MASimple@tv-basicstudies",
-        "BB@tv-basicstudies"
-      ]
-    };
-    if (range) {
-      config["range"] = range;
-    }
-    new TradingView.widget(config);
-  } else {
-    document.getElementById('analysis-price-chart').innerHTML = 
-      `<div class="loading-overlay" style="background:transparent; color:#64748b; display:flex; align-items:center; justify-content:center; height:100%;"><p>正在載入 TradingView 雲端 K 線圖...</p></div>`;
-  }
+  const container = document.getElementById('analysis-price-chart');
+  if (!container) return;
+  
+  // Format interval for TradingView iframe params
+  let tvInterval = 'D';
+  if (interval === 'W') tvInterval = 'W';
+  if (interval === 'M') tvInterval = 'M';
+  
+  container.innerHTML = '';
+  
+  // Construct widget iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = `https://s.tradingview.com/widgetembed/?symbol=${marketType}:${code}&interval=${tvInterval}&theme=light&style=1&timezone=Asia%2FTaipei&locale=zh_TW&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6`;
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.border = 'none';
+  iframe.setAttribute('allowtransparency', 'true');
+  iframe.setAttribute('scrolling', 'no');
+  iframe.setAttribute('allowfullscreen', 'true');
+  
+  container.appendChild(iframe);
 }
 
 // Draw stacked Subcharts based on user indicator checkboxes selection
