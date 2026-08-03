@@ -431,7 +431,7 @@ function getPreviousTradingDay(dateStr) {
 // Load data from static file on server
 async function loadData() {
   try {
-    const res = await fetch('data/history.json?v=3.0');
+    const res = await fetch('data/history.json?v=3.1');
     if (res.ok) {
       rawHistoryData = await res.json();
       console.log(`[App] Successfully loaded ${rawHistoryData.length} days of historical data.`);
@@ -501,60 +501,103 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
 // 🎯 Individual Stock Screener Logic
 // ==========================================================================
 
-// Deterministic mock stocks data generator for fallback/offline mode
-function generateMockStocksForDate(date) {
-  const mockSymbols = [
-    { code: '2330', name: '台積電', basePrice: 950 },
-    { code: '2317', name: '鴻海', basePrice: 200 },
-    { code: '2454', name: '聯發科', basePrice: 1200 },
-    { code: '8069', name: '元太', basePrice: 240 },
-    { code: '2603', name: '長榮', basePrice: 180 },
-    { code: '3231', name: '緯創', basePrice: 110 },
-    { code: '2382', name: '廣達', basePrice: 280 },
-    { code: '3037', name: '欣興', basePrice: 160 },
-    { code: '2303', name: '聯電', basePrice: 50 },
-    { code: '2609', name: '陽明', basePrice: 65 }
-  ];
-  
+// Deterministic mock stocks data generator for fallback/offline mode (can be calibrated with baseline prices)
+function generateMockStocksForDate(date, baselines = null) {
   const daily = {};
-  mockSymbols.forEach(s => {
-    const hash = (parseInt(s.code) * 17 + parseInt(date.substring(4))) % 97;
-    // Generate simulated price changes (-5% to +5%)
-    const pctChange = (hash % 100 - 50) / 1000;
-    const close = s.basePrice * (1 + pctChange);
-    const open = close * (1 - (hash % 40 - 20) / 1000);
-    const high = Math.max(open, close) * (1 + (hash % 15) / 1000);
-    const low = Math.min(open, close) * (1 - (hash % 15) / 1000);
-    const volume = 300 + (hash * 47) % 8000;
-    
-    const marginToday = 4000 + (hash * 13) % 6000;
-    const marginChange = (hash % 2 === 0 ? 1 : -1) * (hash * 3 % 400);
-    const foreignNet = (hash % 2 === 0 ? 1 : -1) * (hash * 7 % 800);
-    const sitcNet = (hash % 3 === 0 ? 1 : -1) * (hash * 2 % 300);
-    const dealersNet = (hash % 5 === 0 ? 1 : -1) * (hash % 150);
+  
+  if (baselines && Object.keys(baselines).length > 0) {
+    Object.keys(baselines).forEach(code => {
+      const stockInfo = baselines[code];
+      // Deterministic hash based on code and date string to create a nice chart curve
+      const hash = (parseInt(code) * 17 + parseInt(date.substring(4))) % 97;
+      // Generate simulated price changes (-4% to +4%)
+      const pctChange = (hash % 80 - 40) / 1000;
+      const close = stockInfo.close * (1 + pctChange);
+      const open = close * (1 - (hash % 30 - 15) / 1000);
+      const high = Math.max(open, close) * (1 + (hash % 10) / 1000);
+      const low = Math.min(open, close) * (1 - (hash % 10) / 1000);
+      const volume = 300 + (hash * 47) % 8000;
+      
+      const marginToday = 4000 + (hash * 13) % 6000;
+      const marginChange = (hash % 2 === 0 ? 1 : -1) * (hash * 3 % 400);
+      const foreignNet = (hash % 2 === 0 ? 1 : -1) * (hash * 7 % 800);
+      const sitcNet = (hash % 3 === 0 ? 1 : -1) * (hash * 2 % 300);
+      const dealersNet = (hash % 5 === 0 ? 1 : -1) * (hash % 150);
 
-    daily[s.code] = {
-      symbol: s.code,
-      name: s.name,
-      open: parseFloat(open.toFixed(2)),
-      high: parseFloat(high.toFixed(2)),
-      low: parseFloat(low.toFixed(2)),
-      close: parseFloat(close.toFixed(2)),
-      volume: volume,
-      change: parseFloat((close - open).toFixed(2)),
-      margin_buy: Math.round(volume * 0.1),
-      margin_sell: Math.round(volume * 0.08),
-      margin_today: marginToday,
-      margin_change: marginChange,
-      foreign_net: foreignNet,
-      sitc_net: sitcNet,
-      dealers_net: dealersNet
-    };
-  });
+      daily[code] = {
+        symbol: code,
+        name: stockInfo.name,
+        open: parseFloat(open.toFixed(2)),
+        high: parseFloat(high.toFixed(2)),
+        low: parseFloat(low.toFixed(2)),
+        close: parseFloat(close.toFixed(2)),
+        volume: volume,
+        change: parseFloat((close - open).toFixed(2)),
+        margin_buy: Math.round(volume * 0.1),
+        margin_sell: Math.round(volume * 0.08),
+        margin_today: marginToday,
+        margin_change: marginChange,
+        foreign_net: foreignNet,
+        sitc_net: sitcNet,
+        dealers_net: dealersNet,
+        market: stockInfo.market || 'TWSE'
+      };
+    });
+  } else {
+    // Static fallback list if no real data is loaded
+    const mockSymbols = [
+      { code: '2330', name: '台積電', basePrice: 950, market: 'TWSE' },
+      { code: '2317', name: '鴻海', basePrice: 200, market: 'TWSE' },
+      { code: '2454', name: '聯發科', basePrice: 1200, market: 'TWSE' },
+      { code: '8069', name: '元太', basePrice: 240, market: 'TPEX' },
+      { code: '2603', name: '長榮', basePrice: 180, market: 'TWSE' },
+      { code: '3231', name: '緯創', basePrice: 110, market: 'TWSE' },
+      { code: '2382', name: '廣達', basePrice: 280, market: 'TWSE' },
+      { code: '3037', name: '欣興', basePrice: 160, market: 'TWSE' },
+      { code: '2303', name: '聯電', basePrice: 50, market: 'TWSE' },
+      { code: '2609', name: '陽明', basePrice: 50, market: 'TWSE' } // Calibrated baseline to 50
+    ];
+    
+    mockSymbols.forEach(s => {
+      const hash = (parseInt(s.code) * 17 + parseInt(date.substring(4))) % 97;
+      const pctChange = (hash % 80 - 40) / 1000;
+      const close = s.basePrice * (1 + pctChange);
+      const open = close * (1 - (hash % 30 - 15) / 1000);
+      const high = Math.max(open, close) * (1 + (hash % 10) / 1000);
+      const low = Math.min(open, close) * (1 - (hash % 10) / 1000);
+      const volume = 300 + (hash * 47) % 8000;
+      
+      const marginToday = 4000 + (hash * 13) % 6000;
+      const marginChange = (hash % 2 === 0 ? 1 : -1) * (hash * 3 % 400);
+      const foreignNet = (hash % 2 === 0 ? 1 : -1) * (hash * 7 % 800);
+      const sitcNet = (hash % 3 === 0 ? 1 : -1) * (hash * 2 % 300);
+      const dealersNet = (hash % 5 === 0 ? 1 : -1) * (hash % 150);
+
+      daily[s.code] = {
+        symbol: s.code,
+        name: s.name,
+        open: parseFloat(open.toFixed(2)),
+        high: parseFloat(high.toFixed(2)),
+        low: parseFloat(low.toFixed(2)),
+        close: parseFloat(close.toFixed(2)),
+        volume: volume,
+        change: parseFloat((close - open).toFixed(2)),
+        margin_buy: Math.round(volume * 0.1),
+        margin_sell: Math.round(volume * 0.08),
+        margin_today: marginToday,
+        margin_change: marginChange,
+        foreign_net: foreignNet,
+        sitc_net: sitcNet,
+        dealers_net: dealersNet,
+        market: s.market
+      };
+    });
+  }
+  
   return daily;
 }
 
-// Load daily stocks JSON files for the last 30 days in parallel (to calculate MA20 & BB)
+// Load daily stocks JSON files for the last 60 days in parallel (to calculate MA20 & BB)
 async function initScreener() {
   if (isScreenerInitialized) return;
   
@@ -564,22 +607,52 @@ async function initScreener() {
   datesList = rawHistoryData.map(item => item.date.replace(/-/g, '').replace(/\//g, '').trim()).slice(-60);
   
   try {
+    // 1st Pass: Fetch real JSON data files from the server
     const promises = datesList.map(async date => {
       try {
-        const res = await fetch(`data/daily_stocks/${date}.json?v=3.0`);
+        const res = await fetch(`data/daily_stocks/${date}.json?v=3.1`);
         if (res.ok) {
           const data = await res.json();
           stockDailyDataSeries[date] = data;
         } else {
-          stockDailyDataSeries[date] = generateMockStocksForDate(date);
+          stockDailyDataSeries[date] = null; // Mark as null to populate in 2nd pass
         }
       } catch (e) {
-        stockDailyDataSeries[date] = generateMockStocksForDate(date);
+        stockDailyDataSeries[date] = null;
       }
     });
     
     await Promise.all(promises);
-    console.log(`[Screener] Successfully loaded ${Object.keys(stockDailyDataSeries).length} trading days.`);
+    
+    // 2nd Pass: Find latest successful real day to calibrate mock baseline prices for ALL stocks
+    let latestRealDate = null;
+    for (let i = datesList.length - 1; i >= 0; i--) {
+      if (stockDailyDataSeries[datesList[i]] !== null && Object.keys(stockDailyDataSeries[datesList[i]]).length > 0) {
+        latestRealDate = datesList[i];
+        break;
+      }
+    }
+    
+    const baselines = {};
+    if (latestRealDate) {
+      const realStocks = stockDailyDataSeries[latestRealDate];
+      Object.keys(realStocks).forEach(code => {
+        baselines[code] = {
+          name: realStocks[code].name,
+          close: realStocks[code].close,
+          market: realStocks[code].market || 'TWSE'
+        };
+      });
+    }
+    
+    // Populate all failed/mock dates with calibrated mock data
+    datesList.forEach(date => {
+      if (stockDailyDataSeries[date] === null) {
+        stockDailyDataSeries[date] = generateMockStocksForDate(date, baselines);
+      }
+    });
+    
+    console.log(`[Screener] Successfully loaded ${Object.keys(stockDailyDataSeries).length} trading days (calibrated fallback active).`);
     isScreenerInitialized = true;
   } catch (err) {
     console.error('[Screener] Failed loading stock data series:', err);
