@@ -2348,24 +2348,18 @@
     },
     "tpex": {
       "date": "20260828",
-      "tpex_margin_buy": 103382,
-      "tpex_margin_sell": 91205,
-      "tpex_margin_redemp": 4025,
-      "tpex_margin_prev": 2254630,
-      "tpex_margin_today": 2262782,
-      "tpex_margin_change": 8152,
-      "tpex_short_buy": 5255,
-      "tpex_short_sell": 6929,
-      "tpex_short_redemp": 2302,
-      "tpex_short_prev": 44008,
-      "tpex_short_today": 43380,
-      "tpex_short_change": -628,
-      "tpex_margin_prev_money": 0,
-      "tpex_margin_today_money": 0,
-      "tpex_margin_change_money": 0,
-      "tpex_margin_buy_money": 0,
-      "tpex_margin_sell_money": 0,
-      "tpex_margin_redemp_money": 0
+      "tpex_margin_buy": 0,
+      "tpex_margin_sell": 0,
+      "tpex_margin_redemp": 0,
+      "tpex_margin_prev": 0,
+      "tpex_margin_today": 0,
+      "tpex_margin_change": 0,
+      "tpex_short_buy": 0,
+      "tpex_short_sell": 0,
+      "tpex_short_redemp": 0,
+      "tpex_short_prev": 0,
+      "tpex_short_today": 0,
+      "tpex_short_change": 0
     },
     "fund": {
       "dealers_self": {
@@ -2394,6 +2388,6 @@
         "net": 458.28
       }
     },
-    "updated_at": "2026-08-29T17:44:07.557Z"
+    "updated_at": "2026-08-30T18:04:37.220Z"
   }
 ]
