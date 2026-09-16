@@ -1,40 +1,40 @@
 {
-  "date": "20260915",
+  "date": "20260916",
   "twse": {
-    "date": "20260915",
-    "margin_buy_units": 226366,
-    "margin_sell_units": 197887,
-    "margin_redemp_units": 3687,
-    "margin_prev_units": 9165719,
-    "margin_today_units": 9190511,
-    "margin_change_units": 24792,
-    "short_buy_units": 17830,
-    "short_sell_units": 19125,
-    "short_redemp_units": 4729,
-    "short_prev_units": 201486,
-    "short_today_units": 198052,
-    "short_change_units": -3434,
-    "margin_buy_money": 16290924,
-    "margin_sell_money": 17615398,
-    "margin_redemp_money": 312670,
-    "margin_prev_money": 583877609,
-    "margin_today_money": 582240465,
-    "margin_change_money": -1637144
+    "date": "20260916",
+    "margin_buy_units": 261378,
+    "margin_sell_units": 198132,
+    "margin_redemp_units": 4880,
+    "margin_prev_units": 9190511,
+    "margin_today_units": 9248877,
+    "margin_change_units": 58366,
+    "short_buy_units": 25065,
+    "short_sell_units": 26711,
+    "short_redemp_units": 2650,
+    "short_prev_units": 198052,
+    "short_today_units": 197048,
+    "short_change_units": -1004,
+    "margin_buy_money": 19791815,
+    "margin_sell_money": 15417455,
+    "margin_redemp_money": 448165,
+    "margin_prev_money": 582240465,
+    "margin_today_money": 586166660,
+    "margin_change_money": 3926195
   },
   "tpex": {
-    "date": "20260915",
-    "tpex_margin_buy": 48808,
-    "tpex_margin_sell": 52208,
-    "tpex_margin_redemp": 1184,
-    "tpex_margin_prev": 2298679,
-    "tpex_margin_today": 2294095,
-    "tpex_margin_change": -4584,
-    "tpex_short_buy": 5035,
-    "tpex_short_sell": 5994,
-    "tpex_short_redemp": 2209,
-    "tpex_short_prev": 41279,
-    "tpex_short_today": 40029,
-    "tpex_short_change": -1250,
+    "date": "20260916",
+    "tpex_margin_buy": 55357,
+    "tpex_margin_sell": 44547,
+    "tpex_margin_redemp": 1226,
+    "tpex_margin_prev": 2294095,
+    "tpex_margin_today": 2303679,
+    "tpex_margin_change": 9584,
+    "tpex_short_buy": 7527,
+    "tpex_short_sell": 6459,
+    "tpex_short_redemp": 4853,
+    "tpex_short_prev": 40029,
+    "tpex_short_today": 34108,
+    "tpex_short_change": -5921,
     "tpex_margin_prev_money": 0,
     "tpex_margin_today_money": 0,
     "tpex_margin_change_money": 0,
@@ -44,30 +44,30 @@
   },
   "fund": {
     "dealers_self": {
-      "buy": 69.36,
-      "sell": 56.35,
-      "net": 13.01
+      "buy": 79.95,
+      "sell": 116.2,
+      "net": -36.25
     },
     "dealers_hedge": {
-      "buy": 188.43,
-      "sell": 343.5,
-      "net": -155.07
+      "buy": 245.27,
+      "sell": 338.75,
+      "net": -93.49
     },
     "sitc": {
-      "buy": 126.45,
-      "sell": 146.37,
-      "net": -19.91
+      "buy": 269.51,
+      "sell": 163.05,
+      "net": 106.46
     },
     "foreign": {
-      "buy": 2247.22,
-      "sell": 2874.2,
-      "net": -626.99
+      "buy": 2638.55,
+      "sell": 2818.36,
+      "net": -179.8
     },
     "total": {
-      "buy": 2631.46,
-      "sell": 3420.42,
-      "net": -788.96
+      "buy": 3233.27,
+      "sell": 3436.36,
+      "net": -203.09
     }
   },
-  "updated_at": "2026-09-15T18:13:11.611Z"
+  "updated_at": "2026-09-16T18:12:24.187Z"
 }
