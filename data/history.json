@@ -3691,5 +3691,78 @@
       }
     },
     "updated_at": "2026-09-23T18:24:58.609Z"
+  },
+  {
+    "date": "20260924",
+    "twse": {
+      "date": "20260924",
+      "margin_buy_units": 270795,
+      "margin_sell_units": 262634,
+      "margin_redemp_units": 10711,
+      "margin_prev_units": 9282262,
+      "margin_today_units": 9279712,
+      "margin_change_units": -2550,
+      "short_buy_units": 19887,
+      "short_sell_units": 12187,
+      "short_redemp_units": 3351,
+      "short_prev_units": 213059,
+      "short_today_units": 202008,
+      "short_change_units": -11051,
+      "margin_buy_money": 30073340,
+      "margin_sell_money": 20479799,
+      "margin_redemp_money": 857972,
+      "margin_prev_money": 606367833,
+      "margin_today_money": 615103402,
+      "margin_change_money": 8735569
+    },
+    "tpex": {
+      "date": "20260924",
+      "tpex_margin_buy": 61157,
+      "tpex_margin_sell": 57253,
+      "tpex_margin_redemp": 2043,
+      "tpex_margin_prev": 2347191,
+      "tpex_margin_today": 2349052,
+      "tpex_margin_change": 1861,
+      "tpex_short_buy": 3203,
+      "tpex_short_sell": 3893,
+      "tpex_short_redemp": 406,
+      "tpex_short_prev": 33674,
+      "tpex_short_today": 33958,
+      "tpex_short_change": 284,
+      "tpex_margin_prev_money": 0,
+      "tpex_margin_today_money": 0,
+      "tpex_margin_change_money": 0,
+      "tpex_margin_buy_money": 0,
+      "tpex_margin_sell_money": 0,
+      "tpex_margin_redemp_money": 0
+    },
+    "fund": {
+      "dealers_self": {
+        "buy": 98.83,
+        "sell": 56.47,
+        "net": 42.36
+      },
+      "dealers_hedge": {
+        "buy": 230.88,
+        "sell": 259.85,
+        "net": -28.97
+      },
+      "sitc": {
+        "buy": 139.21,
+        "sell": 267.45,
+        "net": -128.23
+      },
+      "foreign": {
+        "buy": 2724.21,
+        "sell": 3053.86,
+        "net": -329.65
+      },
+      "total": {
+        "buy": 3193.13,
+        "sell": 3637.62,
+        "net": -444.49
+      }
+    },
+    "updated_at": "2026-09-24T18:26:06.371Z"
   }
 ]
